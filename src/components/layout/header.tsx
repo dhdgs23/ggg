@@ -28,9 +28,7 @@ export default function Header() {
           <span className="font-bold font-headline text-lg">Garena Gears</span>
         </Link>
         
-        <div className="flex-1" />
-
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium ml-auto">
           {navLinks.map(({ href, label }) => (
             <Link 
               key={label} 
