@@ -20,7 +20,7 @@ export default function TermsAndConditionsPage() {
           
           <div className="prose prose-lg max-w-none text-foreground space-y-6">
             <p>
-              Please read these Terms and Conditions ("Terms") carefully before using the Garena Gears website (the "Service") operated by Garena.
+              Please read these Terms and Conditions ("Terms") carefully before using the Garena website (the "Service") operated by Garena.
             </p>
 
             <h2 className="font-headline text-3xl font-semibold !mt-12 !mb-4">1. Accounts</h2>
@@ -48,7 +48,7 @@ export default function TermsAndConditionsPage() {
             
             <h2 className="font-headline text-3xl font-semibold !mt-12 !mb-4">4. Referral Program</h2>
             <p>
-              Our referral program allows you to earn rewards. If a new user signs up using your referral link and completes a top-up, 50% of their first top-up amount will be credited to your account as a reward. Garena Gears reserves the right to change the terms of the referral program or terminate it at any time. Fraudulent activity will result in the forfeiture of rewards and potential account termination.
+              Our referral program allows you to earn rewards. If a new user signs up using your referral link and completes a top-up, 50% of their first top-up amount will be credited to your account as a reward. Garena reserves the right to change the terms of the referral program or terminate it at any time. Fraudulent activity will result in the forfeiture of rewards and potential account termination.
             </p>
 
             <h2 className="font-headline text-3xl font-semibold !mt-12 !mb-4">5. Changes to Terms</h2>

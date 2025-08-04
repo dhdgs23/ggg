@@ -6,7 +6,7 @@ import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 
 export const metadata: Metadata = {
-  title: 'Garena Gears',
+  title: 'Garena',
   description: 'The official Garena store for discounted Free Fire items.',
 };
 

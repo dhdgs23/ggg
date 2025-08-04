@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/definitions';
-import { Flame, Loader2, X, ShieldCheck, Smartphone, Globe } from 'lucide-react';
+import { Loader2, X, ShieldCheck, Smartphone, Globe } from 'lucide-react';
 import Image from 'next/image';
 import { createRedeemCodeOrder, submitUtr } from '@/app/actions';
 import QrCode from 'react-qr-code';
@@ -127,7 +127,7 @@ export default function PurchaseModal({ product, onClose }: PurchaseModalProps) 
     }[app];
     const params = new URLSearchParams({
         pa: upiId,
-        pn: 'Garena Gears',
+        pn: 'Garena',
         am: product.price.toString(),
         cu: 'INR',
         tn: `Order for ${product.name}`,
@@ -142,8 +142,8 @@ export default function PurchaseModal({ product, onClose }: PurchaseModalProps) 
           <>
             <DialogHeader>
                 <div className="flex items-center gap-2 mb-4">
-                    <Flame className="h-7 w-7 text-primary" />
-                    <DialogTitle className="text-2xl font-headline">Garena Gears</DialogTitle>
+                    <Image src="/img/garena.png" alt="Garena Logo" width={28} height={28} />
+                    <DialogTitle className="text-2xl font-headline">Garena</DialogTitle>
                 </div>
             </DialogHeader>
             <div className="space-y-6">
@@ -223,10 +223,25 @@ export default function PurchaseModal({ product, onClose }: PurchaseModalProps) 
                     
                     <div className="w-full border-t pt-4 space-y-3">
                          <p className="text-center text-sm font-semibold flex items-center justify-center gap-2"><Smartphone />Or pay directly from your phone</p>
-                         <div className="grid grid-cols-3 gap-2">
-                            <Button asChild variant="outline"><a href={upiLink('gpay')}>Google Pay</a></Button>
-                            <Button asChild variant="outline"><a href={upiLink('paytm')}>Paytm</a></Button>
-                            <Button asChild variant="outline"><a href={upiLink('phonepe')}>PhonePe</a></Button>
+                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <Button asChild variant="outline" className="flex items-center gap-2">
+                                <a href={upiLink('gpay')}>
+                                    <Image src="/img/gpay.png" alt="Google Pay" width={20} height={20} />
+                                    Google Pay
+                                </a>
+                            </Button>
+                            <Button asChild variant="outline" className="flex items-center gap-2">
+                                <a href={upiLink('paytm')}>
+                                    <Image src="/img/paytm.png" alt="Paytm" width={20} height={20} />
+                                    Paytm
+                                </a>
+                            </Button>
+                            <Button asChild variant="outline" className="flex items-center gap-2">
+                                <a href={upiLink('phonepe')}>
+                                    <Image src="/img/phonepay.png" alt="PhonePe" width={20} height={20} />
+                                    PhonePe
+                                </a>
+                            </Button>
                          </div>
                     </div>
                     <p className="text-xs text-muted-foreground font-semibold tracking-wider pt-2">Powered by UPI</p>

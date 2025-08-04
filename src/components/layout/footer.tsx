@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Flame } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -9,8 +9,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="flex flex-col">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <Flame className="h-6 w-6 text-primary" />
-              <span className="font-bold font-headline text-lg">Garena Gears</span>
+              <Image src="/img/garena.png" alt="Garena Logo" width={24} height={24} className="h-6 w-6" />
+              <span className="font-bold font-headline text-lg">Garena</span>
             </Link>
             <p className="text-muted-foreground text-sm max-w-sm">
               Your official, secure, and trusted source for discounted Free Fire items. Based in Singapore, we serve players globally.
@@ -34,7 +34,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 border-t pt-6 text-center text-sm text-muted-foreground">
-          <p>&copy; {year} Garena Gears. All rights reserved. This is an official website of Garena, Headquartered in Singapore.</p>
+          <p>&copy; {year} Garena. All rights reserved. This is an official website of Garena, Headquartered in Singapore.</p>
         </div>
       </div>
     </footer>

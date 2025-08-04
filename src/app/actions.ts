@@ -654,12 +654,6 @@ export async function updateWithdrawalStatus(withdrawalId: string, status: 'Comp
     const { ObjectId } = await import('mongodb');
     const db = await connectToDatabase();
 
-    // Find the withdrawal request to potentially refund if it fails
-    const withdrawal = await db.collection<Withdrawal>('withdrawals').findOne({ _id: new ObjectId(withdrawalId) });
-    if (!withdrawal) {
-        return { success: false, message: 'Withdrawal request not found.' };
-    }
-
     const result = await db.collection('withdrawals').updateOne(
         { _id: new ObjectId(withdrawalId) },
         { $set: { status } }
@@ -682,12 +676,22 @@ async function seedProducts() {
   
     if (count === 0) {
       console.log('No products found, seeding database...');
-      const productsToInsert = Array.from({ length: 12 }, (_, i) => ({
-        name: `Game Item Pack ${i + 1}`,
-        price: (i + 1) * 20,
+      const productsToInsert = [
+        { name: "100 Diamonds", price: 20, imageUrl: "/img/100.png" },
+        { name: "310 Diamonds", price: 40, imageUrl: "/img/310.png" },
+        { name: "520 Diamonds", price: 60, imageUrl: "/img/520.png" },
+        { name: "1060 Diamonds", price: 80, imageUrl: "/img/1060.png" },
+        { name: "2180 Diamonds", price: 100, imageUrl: "/img/2180.png" },
+        { name: "5600 Diamonds", price: 120, imageUrl: "/img/5600.png" },
+        { name: "Weekly Membership", price: 140, imageUrl: "/img/weekly.png" },
+        { name: "Monthly Membership", price: 160, imageUrl: "/img/monthely.png" },
+        { name: "Itachi Uchiha Bundle", price: 180, imageUrl: "/img/itachi.png" },
+        { name: "MP40 - Predatory Cobra", price: 200, imageUrl: "/img/mp40.png" },
+        { name: "AK47 - Blue Flame Draco", price: 220, imageUrl: "/img/ak47.png" },
+        { name: "LOL Emote", price: 240, imageUrl: "/img/lol.png" },
+      ].map(p => ({
+        ...p,
         quantity: 1,
-        imageUrl: 'https://placehold.co/600x400.png',
-        dataAiHint: 'game item',
         isAvailable: true,
         isVanished: false,
       }));

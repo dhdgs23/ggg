@@ -14,9 +14,9 @@ import Autoplay from 'embla-carousel-autoplay';
 import { cn } from '@/lib/utils';
 
 const sliderImages = [
-  { src: 'https://placehold.co/1200x400.png', alt: 'Epic battle scene from Free Fire', dataAiHint: 'gaming battle' },
-  { src: 'https://placehold.co/1200x400.png', alt: 'Promotional banner for new game items', dataAiHint: 'gaming characters' },
-  { src: 'https://placehold.co/1200x400.png', alt: 'Close-up of a rare in-game weapon', dataAiHint: 'game weapon' },
+  { src: '/img/slider1.png', alt: 'Epic battle scene from Free Fire' },
+  { src: '/img/slider2.png', alt: 'Promotional banner for new game items' },
+  { src: '/img/slider3.png', alt: 'Close-up of a rare in-game weapon' },
 ];
 
 export default function ImageSlider() {
@@ -70,7 +70,6 @@ export default function ImageSlider() {
                     fill
                     className="object-cover"
                     priority={index === 0}
-                    data-ai-hint={image.dataAiHint}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 </div>

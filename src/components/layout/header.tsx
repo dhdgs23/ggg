@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Flame, Menu, ShoppingCart } from 'lucide-react';
+import { Menu, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/sheet';
 import { useState } from 'react';
 import NavigationLinks from './navigation-links';
+import Image from 'next/image';
 
 
 export default function Header() {
@@ -20,8 +21,8 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container px-4 md:px-6 flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <Flame className="h-6 w-6 text-primary" />
-          <span className="font-bold font-headline text-lg">Garena Gears</span>
+           <Image src="/img/garena.png" alt="Garena Logo" width={32} height={32} className="h-8 w-8" />
+          <span className="font-bold font-headline text-lg">Garena</span>
         </Link>
 
         <div className="flex items-center gap-4">
@@ -51,9 +52,9 @@ export default function Header() {
                     className="flex items-center gap-2 mb-4"
                     onClick={() => setIsSheetOpen(false)}
                   >
-                    <Flame className="h-6 w-6 text-primary" />
+                    <Image src="/img/garena.png" alt="Garena Logo" width={32} height={32} className="h-8 w-8" />
                     <span className="font-bold font-headline text-lg">
-                      Garena Gears
+                      Garena
                     </span>
                   </Link>
                   <NavigationLinks mobile onLinkClick={() => setIsSheetOpen(false)} />

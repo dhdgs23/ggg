@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { logoutAdmin } from '@/app/actions';
-import { Home, ListChecks, ListX, Users, LogOut, Flame, Banknote, Tag, ArchiveRestore } from 'lucide-react';
+import { Home, ListChecks, ListX, Users, LogOut, Banknote, Tag, ArchiveRestore } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const navItems = [
   { href: '/admin', label: 'Pending Orders', icon: Home },
@@ -30,8 +31,8 @@ export default function AdminSidebar() {
     <aside className="hidden md:flex flex-col w-64 border-r bg-background">
       <div className="flex items-center justify-center h-16 border-b">
         <Link href="/admin" className="flex items-center gap-2 font-semibold">
-          <Flame className="h-6 w-6 text-primary" />
-          <span>Garena Gears Admin</span>
+          <Image src="/img/garena.png" alt="Garena Logo" width={24} height={24} />
+          <span>Garena Admin</span>
         </Link>
       </div>
       <nav className="flex-1 p-4 space-y-2">
