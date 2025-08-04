@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { requestWithdrawal } from '@/app/actions';
 import { useFormStatus } from 'react-dom';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import type { Withdrawal } from '@/lib/definitions';
 import { Banknote, Loader2, WalletCards } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -28,6 +28,26 @@ function SubmitButton() {
         </Button>
     )
 }
+
+const FormattedDate = ({ dateString }: { dateString: string }) => {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
+    if (!mounted) {
+        return null; // Don't render on the server
+    }
+
+    const date = new Date(dateString);
+    return date.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    });
+}
+
 
 export default function Wallet({ balance, withdrawals }: WalletProps) {
   const { toast } = useToast();
@@ -69,7 +89,9 @@ export default function Wallet({ balance, withdrawals }: WalletProps) {
                         <div key={w._id.toString()} className="flex justify-between items-center text-sm p-3 rounded-md bg-muted/50">
                             <div>
                                 <p className="font-medium">Amount: ₹{w.amount.toFixed(2)} ({w.method})</p>
-                                <p className="text-xs text-muted-foreground">{new Date(w.createdAt).toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    <FormattedDate dateString={w.createdAt as unknown as string} />
+                                </p>
                             </div>
                             <Badge variant={
                                 w.status === 'Completed' ? 'default' :
