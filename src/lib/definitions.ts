@@ -6,6 +6,7 @@ export interface User {
   password:  string;
   referralCode?: string;
   referredBy?: string;
+  walletBalance?: number;
   createdAt: Date;
 }
 
@@ -31,4 +32,20 @@ export interface Order {
     redeemCode?: string;
     referralCode?: string;
     createdAt: Date;
+}
+
+export interface Withdrawal {
+  _id: ObjectId;
+  userId: string;
+  username: string;
+  amount: number;
+  method: 'Bank' | 'UPI';
+  details: {
+    bankName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    upiId?: string;
+  };
+  status: 'Pending' | 'Completed' | 'Failed';
+  createdAt: Date;
 }

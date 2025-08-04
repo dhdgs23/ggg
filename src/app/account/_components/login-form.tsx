@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { PasswordInput } from './password-input';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -48,7 +49,7 @@ export default function LoginForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="password-login">Password</Label>
-          <Input id="password-login" name="password" type="password" required />
+          <PasswordInput id="password-login" name="password" required />
         </div>
       </CardContent>
       <CardFooter>

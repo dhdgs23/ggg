@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { PasswordInput } from './password-input';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -51,7 +52,7 @@ export default function CreateAccountForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" name="password" type="password" required minLength={6} />
+          <PasswordInput id="password" name="password" required minLength={6} />
         </div>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />

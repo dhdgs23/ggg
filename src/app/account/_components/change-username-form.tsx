@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { PasswordInput } from './password-input';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -45,7 +46,7 @@ export default function ChangeUsernameForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="password-for-username">Password</Label>
-        <Input id="password-for-username" name="password" type="password" required placeholder="Enter current password"/>
+        <PasswordInput id="password-for-username" name="password" required placeholder="Enter current password"/>
       </div>
       <div>
         <SubmitButton />

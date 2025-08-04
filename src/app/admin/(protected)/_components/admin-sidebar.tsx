@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { logoutAdmin } from '@/app/actions';
-import { Home, ListChecks, ListX, Users, LogOut, Flame } from 'lucide-react';
+import { Home, ListChecks, ListX, Users, LogOut, Flame, Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/admin/success', label: 'Successful Orders', icon: ListChecks },
   { href: '/admin/failed', label: 'Failed Orders', icon: ListX },
   { href: '/admin/accounts', label: 'User Accounts', icon: Users },
+  { href: '/admin/withdrawals', label: 'Withdrawals', icon: Banknote },
 ];
 
 export default function AdminSidebar() {

@@ -7,15 +7,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ChangePasswordForm from './change-password-form';
 import ChangeUsernameForm from './change-username-form';
 import ReferralSystem from './referral-system';
+import Wallet from './wallet';
+import type { Withdrawal } from '@/lib/definitions';
 
 interface AccountDetailsProps {
   username: string;
+  walletBalance: number;
+  withdrawals: Withdrawal[];
 }
 
-export default function AccountDetails({ username }: AccountDetailsProps) {
+export default function AccountDetails({ username, walletBalance, withdrawals }: AccountDetailsProps) {
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-       <ReferralSystem />
+    <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+       <div className="space-y-6">
+        <ReferralSystem />
+        <Wallet balance={walletBalance} withdrawals={withdrawals} />
+       </div>
       <Card>
         <CardHeader className="flex flex-row justify-between items-start">
           <div>

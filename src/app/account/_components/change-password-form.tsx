@@ -4,9 +4,9 @@ import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import { changePassword } from '@/app/actions';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { PasswordInput } from './password-input';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -41,11 +41,11 @@ export default function ChangePasswordForm() {
     <form ref={formRef} action={dispatch} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="oldPassword">Old Password</Label>
-        <Input id="oldPassword" name="oldPassword" type="password" required />
+        <PasswordInput id="oldPassword" name="oldPassword" required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="newPassword">New Password</Label>
-        <Input id="newPassword" name="newPassword" type="password" required minLength={6}/>
+        <PasswordInput id="newPassword" name="newPassword" required minLength={6}/>
       </div>
       <div>
         <SubmitButton />

@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { type User, type Order, type Product } from '@/lib/definitions';
+import { type User, type Order, type Product, type Withdrawal } from '@/lib/definitions';
 import { randomBytes } from 'crypto';
 import { ensureUserId } from '@/lib/user-actions';
 import { revalidatePath } from 'next/cache';
@@ -68,6 +68,7 @@ export async function getSession() {
 
 export async function logout() {
   cookies().set('session', '', { expires: new Date(0) });
+  redirect('/account');
 }
 
 export async function createAccount(prevState: FormState, formData: FormData): Promise<FormState> {
@@ -89,7 +90,7 @@ export async function createAccount(prevState: FormState, formData: FormData): P
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser: Omit<User, '_id' | 'createdAt'> = { username, password: hashedPassword, createdAt: new Date() };
+    const newUser: Omit<User, '_id' | 'createdAt'> = { username, password: hashedPassword, walletBalance: 0, createdAt: new Date() };
 
     if (referralCode) {
         const referringUser = await db.collection<User>('users').findOne({ referralCode });
@@ -103,7 +104,7 @@ export async function createAccount(prevState: FormState, formData: FormData): P
     await db.collection('users').insertOne(newUser);
 
     await createSession(username);
-
+    revalidatePath('/account');
     return { success: true, message: 'Account created successfully!' };
   } catch (error) {
     console.error(error);
@@ -135,7 +136,7 @@ export async function login(prevState: FormState, formData: FormData): Promise<F
     }
 
     await createSession(username);
-
+    revalidatePath('/account');
     return { success: true, message: 'Logged in successfully!' };
   } catch (error) {
     console.error(error);
@@ -227,7 +228,7 @@ export async function changeUsername(prevState: FormState, formData: FormData): 
         
         // Create a new session with the new username
         await createSession(newUsername);
-
+        revalidatePath('/account');
         return { success: true, message: 'Username changed successfully!' };
     } catch (error) {
         console.error(error);
@@ -265,6 +266,7 @@ export async function generateReferralLink(): Promise<{ success: boolean; link?:
         );
 
         const link = `${baseUrl}/?ref=${referralCode}`;
+        revalidatePath('/account');
         return { success: true, link, message: 'Referral link generated successfully!' };
 
     } catch (error) {
@@ -407,7 +409,6 @@ type AdminFormState = {
 };
 
 export async function verifyAdminPassword(prevState: AdminFormState, formData: FormData): Promise<FormState> {
-  noStore();
   const password = formData.get('password') as string;
   const adminPassword = process.env.ADMIN_PASSWORD;
 
@@ -444,9 +445,29 @@ export async function updateOrderStatus(orderId: string, status: 'Completed' | '
     if (!isAdmin) {
         return { success: false };
     }
+
     const { ObjectId } = await import('mongodb');
     const db = await connectToDatabase();
+    
+    const order = await db.collection('orders').findOne({ _id: new ObjectId(orderId) });
+    if (!order) {
+        return { success: false };
+    }
+
+    // If order is completed and has a referral code, credit the referring user
+    if (status === 'Completed' && order.referralCode) {
+        const referringUser = await db.collection<User>('users').findOne({ referralCode: order.referralCode });
+        if (referringUser) {
+            const reward = order.productPrice * 0.5;
+            await db.collection('users').updateOne(
+                { _id: referringUser._id },
+                { $inc: { walletBalance: reward } }
+            );
+        }
+    }
+
     await db.collection('orders').updateOne({ _id: new ObjectId(orderId) }, { $set: { status } });
+
     revalidatePath('/admin');
     revalidatePath('/admin/success');
     revalidatePath('/admin/failed');
@@ -496,7 +517,7 @@ export async function getOrdersForAdmin(
   const orders = ordersFromDb.map((order: any) => ({
     ...order,
     _id: order._id.toString(),
-    createdAt: new Date(order.createdAt).toLocaleString(), // Format date here
+    createdAt: order.createdAt.toLocaleString(),
   }));
 
   return { orders, hasMore };
@@ -526,9 +547,161 @@ export async function getUsersForAdmin(page: number, sort: string, search: strin
   const users = usersFromDb.map((user: any) => ({
     ...user,
     _id: user._id.toString(),
-    createdAt: new Date(user.createdAt).toLocaleString(), // Format date here
+    createdAt: user.createdAt.toLocaleString(),
   }));
 
 
   return { users, hasMore };
+}
+
+
+// --- Wallet & Withdrawal Actions ---
+
+export async function getWalletData(): Promise<{ walletBalance: number; withdrawals: Withdrawal[] }> {
+    noStore();
+    const session = await getSession();
+    if (!session?.username) {
+        return { walletBalance: 0, withdrawals: [] };
+    }
+
+    const db = await connectToDatabase();
+    const user = await db.collection<User>('users').findOne({ username: session.username });
+    if (!user) {
+        return { walletBalance: 0, withdrawals: [] };
+    }
+    
+    const withdrawalsFromDb = await db.collection<Withdrawal>('withdrawals').find({ userId: user._id.toString() }).sort({ createdAt: -1 }).toArray();
+
+    const withdrawals = withdrawalsFromDb.map((w: any) => ({
+        ...w,
+        _id: w._id.toString(),
+        createdAt: w.createdAt.toLocaleString(),
+    }));
+
+    return { walletBalance: user.walletBalance || 0, withdrawals };
+}
+
+const upiSchema = z.object({
+  amount: z.coerce.number().positive('Amount must be positive.'),
+  method: z.literal('UPI'),
+  upiId: z.string().min(5, 'Invalid UPI ID'),
+});
+
+const bankSchema = z.object({
+  amount: z.coerce.number().positive('Amount must be positive.'),
+  method: z.literal('Bank'),
+  bankName: z.string().min(3, 'Bank name is required'),
+  accountNumber: z.string().min(8, 'Invalid account number'),
+  ifscCode: z.string().length(11, 'IFSC code must be 11 characters'),
+});
+
+export async function requestWithdrawal(formData: FormData): Promise<FormState> {
+    const session = await getSession();
+    if (!session?.username) {
+        return { success: false, message: 'You must be logged in.' };
+    }
+    const db = await connectToDatabase();
+    const user = await db.collection<User>('users').findOne({ username: session.username });
+    if (!user) {
+        return { success: false, message: 'User not found.' };
+    }
+
+    const rawFormData = Object.fromEntries(formData.entries());
+    const method = rawFormData.method as 'UPI' | 'Bank';
+    
+    const schema = method === 'UPI' ? upiSchema : bankSchema;
+    const validatedFields = schema.safeParse(rawFormData);
+
+    if (!validatedFields.success) {
+        const errors = validatedFields.error.errors.map(e => e.message).join(', ');
+        return { success: false, message: `Invalid form data: ${errors}` };
+    }
+
+    const { amount } = validatedFields.data;
+    
+    if (amount > (user.walletBalance || 0)) {
+        return { success: false, message: 'Insufficient balance.' };
+    }
+    
+    // Deduct from wallet immediately
+    await db.collection('users').updateOne({ _id: user._id }, { $inc: { walletBalance: -amount } });
+
+    const newWithdrawal: Omit<Withdrawal, '_id'> = {
+        userId: user._id.toString(),
+        username: user.username,
+        amount,
+        method,
+        details: method === 'UPI' ? { upiId: validatedFields.data.upiId } : {
+            bankName: validatedFields.data.bankName,
+            accountNumber: validatedFields.data.accountNumber,
+            ifscCode: validatedFields.data.ifscCode,
+        },
+        status: 'Pending',
+        createdAt: new Date(),
+    };
+
+    await db.collection('withdrawals').insertOne(newWithdrawal);
+    
+    revalidatePath('/account');
+    revalidatePath('/admin/withdrawals');
+    return { success: true, message: 'Withdrawal request submitted.' };
+}
+
+export async function getWithdrawalsForAdmin(page: number, sort: string, status: ('Pending' | 'Completed' | 'Failed')[]) {
+    noStore();
+    const db = await connectToDatabase();
+    const skip = (page - 1) * PAGE_SIZE;
+
+    const query: any = { status: { $in: status } };
+
+    const withdrawalsFromDb = await db.collection<Withdrawal>('withdrawals')
+        .find(query)
+        .sort({ createdAt: sort === 'asc' ? 1 : -1 })
+        .skip(skip)
+        .limit(PAGE_SIZE)
+        .toArray();
+    
+    const totalWithdrawals = await db.collection('withdrawals').countDocuments(query);
+    const hasMore = skip + withdrawalsFromDb.length < totalWithdrawals;
+
+    const withdrawals = withdrawalsFromDb.map((w: any) => ({
+        ...w,
+        _id: w._id.toString(),
+        createdAt: w.createdAt.toLocaleString(),
+    }));
+
+    return { withdrawals, hasMore };
+}
+
+export async function updateWithdrawalStatus(withdrawalId: string, status: 'Completed' | 'Failed'): Promise<{ success: boolean; message?: string }> {
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) {
+        return { success: false };
+    }
+    const { ObjectId } = await import('mongodb');
+    const db = await connectToDatabase();
+
+    const result = await db.collection('withdrawals').updateOne(
+        { _id: new ObjectId(withdrawalId) },
+        { $set: { status } }
+    );
+    
+    if (result.modifiedCount === 0) {
+        return { success: false, message: 'Withdrawal request not found or status already updated.' };
+    }
+
+    // If a request fails, refund the money to the user's wallet
+    if (status === 'Failed') {
+        const withdrawal = await db.collection('withdrawals').findOne({ _id: new ObjectId(withdrawalId) });
+        if (withdrawal) {
+            await db.collection('users').updateOne(
+                { _id: new ObjectId(withdrawal.userId) },
+                { $inc: { walletBalance: withdrawal.amount } }
+            );
+        }
+    }
+
+    revalidatePath('/admin/withdrawals');
+    revalidatePath('/account');
+    return { success: true };
 }
