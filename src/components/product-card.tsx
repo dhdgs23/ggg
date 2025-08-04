@@ -8,6 +8,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import { useState } from 'react';
 import PurchaseModal from './purchase-modal';
@@ -30,7 +31,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         </CardHeader>
         <CardContent className="flex-grow p-4">
-          <CardTitle className="text-lg font-headline font-semibold">{product.name}</CardTitle>
+          <CardDescription>Quantity: {product.quantity}</CardDescription>
+          <CardTitle className="text-lg font-headline font-semibold mt-1">{product.name}</CardTitle>
         </CardContent>
         <CardFooter className="p-4 pt-0">
           {product.isAvailable ? (

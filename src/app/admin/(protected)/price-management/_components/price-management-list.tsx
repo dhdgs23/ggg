@@ -26,7 +26,7 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
       const result = await updateProduct(productId, formData);
       if (result.success) {
         toast({ title: 'Success', description: 'Product updated successfully.' });
-        setProducts(products.map(p => p._id === productId ? { ...p, ...Object.fromEntries(formData.entries()), price: parseFloat(formData.get('price') as string) } : p));
+        setProducts(products.map(p => p._id === productId ? { ...p, ...Object.fromEntries(formData.entries()), price: parseFloat(formData.get('price') as string), quantity: parseInt(formData.get('quantity') as string) } : p));
       } else {
         toast({ variant: 'destructive', title: 'Error', description: result.message });
       }
@@ -57,8 +57,8 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
         {products.map((product) => (
           <form key={product._id} action={(formData) => handleUpdate(product._id, formData)}>
             <Card>
-              <CardContent className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
+              <CardContent className="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor={`name-${product._id}`}>Product Name</Label>
                   <Input
                     id={`name-${product._id}`}
@@ -76,7 +76,17 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
                     defaultValue={product.price}
                   />
                 </div>
-                <div className="flex items-end justify-between">
+                <div className="space-y-2">
+                  <Label htmlFor={`quantity-${product._id}`}>Quantity</Label>
+                  <Input
+                    id={`quantity-${product._id}`}
+                    name="quantity"
+                    type="number"
+                    step="1"
+                    defaultValue={product.quantity}
+                  />
+                </div>
+                <div className="flex items-end justify-between md:col-start-4">
                     <div className="space-y-2">
                         <Label htmlFor={`isAvailable-${product._id}`}>Available</Label>
                         <div className="flex items-center h-10">

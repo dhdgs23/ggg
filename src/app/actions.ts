@@ -708,6 +708,7 @@ async function seedProducts() {
       const productsToInsert = Array.from({ length: 12 }, (_, i) => ({
         name: `Game Item Pack ${i + 1}`,
         price: (i + 1) * 20,
+        quantity: 1,
         imageUrl: 'https://placehold.co/600x400.png',
         dataAiHint: 'game item',
         isAvailable: true,
@@ -739,6 +740,7 @@ export async function getProducts() {
 const productUpdateSchema = z.object({
     name: z.string().min(3, 'Product name must be at least 3 characters.'),
     price: z.coerce.number().positive('Price must be a positive number.'),
+    quantity: z.coerce.number().int().positive('Quantity must be a positive integer.'),
     isAvailable: z.enum(['on', 'off']).optional(),
 });
 
@@ -755,14 +757,14 @@ export async function updateProduct(productId: string, formData: FormData): Prom
         return { success: false, message: validatedFields.error.errors.map(e => e.message).join(', ') };
     }
 
-    const { name, price } = validatedFields.data;
+    const { name, price, quantity } = validatedFields.data;
     const isAvailable = rawFormData.isAvailable === 'on';
 
     const { ObjectId } = await import('mongodb');
     const db = await connectToDatabase();
     await db.collection('products').updateOne(
         { _id: new ObjectId(productId) },
-        { $set: { name, price, isAvailable } }
+        { $set: { name, price, quantity, isAvailable } }
     );
     
     revalidatePath('/');

@@ -14,6 +14,7 @@ export interface Product {
     _id: string; // From MongoDB
     name: string;
     price: number;
+    quantity: number;
     imageUrl: string;
     dataAiHint: string;
     isAvailable: boolean;
