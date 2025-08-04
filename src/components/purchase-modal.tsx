@@ -153,7 +153,7 @@ export default function PurchaseModal({ product, onClose }: PurchaseModalProps) 
                     </div>
                     <div>
                         <h3 className="font-semibold">{product.name}</h3>
-                        <p className="text-2xl font-bold text-primary">${product.price}</p>
+                        <p className="text-2xl font-bold text-primary font-sans">₹{product.price}</p>
                     </div>
                 </div>
                  <div className="space-y-2">
@@ -185,11 +185,11 @@ export default function PurchaseModal({ product, onClose }: PurchaseModalProps) 
                     <Input id="gaming-id" placeholder="Your in-game ID" value={gamingId} onChange={e => setGamingId(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                   <Button onClick={handleBuyWithUpi} className="w-full" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="animate-spin" /> : `Buy ($${product.price})`}
+                   <Button onClick={handleBuyWithUpi} className="w-full font-sans" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="animate-spin" /> : `Buy ₹${product.price}`}
                     </Button>
-                    <Button onClick={handleBuyWithRedeemCode} className="w-full" variant="secondary" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="animate-spin" /> : `Buy ($${product.price}) with Redeem Code`}
+                    <Button onClick={handleBuyWithRedeemCode} className="w-full font-sans" variant="secondary" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="animate-spin" /> : `Buy ₹${product.price} with Redeem Code`}
                     </Button>
                 </div>
                 <p className="text-xs text-muted-foreground text-center mt-2">

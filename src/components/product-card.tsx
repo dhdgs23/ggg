@@ -38,10 +38,10 @@ export default function ProductCard({ product }: ProductCardProps) {
         <CardFooter className="p-4 pt-0">
           {product.isAvailable ? (
             <Button 
-              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base transition-transform duration-200 hover:scale-105"
+              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base transition-transform duration-200 hover:scale-105 font-sans"
               onClick={() => setIsModalOpen(true)}
             >
-              Buy (${product.price})
+              Buy ₹{product.price}
             </Button>
           ) : (
             <Button 

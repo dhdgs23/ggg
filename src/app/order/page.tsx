@@ -118,7 +118,7 @@ export default function OrderPage() {
               </CardContent>
               <CardFooter className="bg-muted/40 p-4 text-sm text-muted-foreground flex justify-between items-center">
                 <span><FormattedDate dateString={order.createdAt as unknown as string} /></span>
-                <span className="font-bold text-foreground">${order.productPrice}</span>
+                <span className="font-bold text-foreground font-sans">₹{order.productPrice}</span>
               </CardFooter>
             </Card>
           ))}

@@ -55,7 +55,7 @@ export default function Wallet({ balance, withdrawals }: WalletProps) {
       <CardContent className="space-y-6">
         <div className="p-6 rounded-lg bg-gradient-to-tr from-primary/80 to-primary text-primary-foreground text-center">
             <p className="text-sm uppercase tracking-wider">Current Balance</p>
-            <p className="text-4xl font-bold">${balance.toFixed(2)}</p>
+            <p className="text-4xl font-bold font-sans">₹{balance.toFixed(2)}</p>
         </div>
         
         <div>
