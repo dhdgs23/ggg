@@ -400,19 +400,26 @@ export async function submitUtr(orderId: string, utr: string): Promise<{ success
 }
 
 // --- Admin Actions ---
-export async function verifyAdminPassword(password: string): Promise<{success: boolean, message: string}> {
+export async function verifyAdminPassword(prevState: any, formData: FormData): Promise<{message: string}> {
+  const password = formData.get('password') as string;
   const adminPassword = process.env.ADMIN_PASSWORD;
+
   if (!adminPassword) {
     console.error('ADMIN_PASSWORD environment variable not set.');
-    return { success: false, message: 'Admin password not configured.' };
+    return { message: 'Admin password not configured.' };
   }
+  
   const isValid = password === adminPassword;
+
   if (isValid) {
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     cookies().set('admin_session', 'true', { expires, httpOnly: true, sameSite: 'strict' });
-    redirect('/admin');
+  } else {
+    return { message: 'Incorrect password.' };
   }
-  return { success: false, message: 'Incorrect password.' };
+  
+  revalidatePath('/admin');
+  redirect('/admin');
 }
 
 export async function isAdminAuthenticated(): Promise<boolean> {

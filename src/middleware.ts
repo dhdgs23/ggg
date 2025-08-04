@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
   const response = NextResponse.next();
 
   // Handle user ID
@@ -28,27 +27,10 @@ export async function middleware(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
     });
   }
-  
-  // Admin login page redirect if already logged in
-  if (pathname === '/admin/login') {
-      const isAdmin = request.cookies.get('admin_session')?.value === 'true';
-      if (isAdmin) {
-          return NextResponse.redirect(new URL('/admin', request.url));
-      }
-  }
-
-  // Protect admin pages
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-      const isAdmin = request.cookies.get('admin_session')?.value === 'true';
-      if (!isAdmin) {
-          return NextResponse.redirect(new URL('/admin/login', request.url));
-      }
-  }
-
 
   return response;
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|admin/login).*)'],
 };

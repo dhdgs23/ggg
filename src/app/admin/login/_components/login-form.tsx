@@ -2,7 +2,6 @@
 
 import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
-import { useRouter } from 'next/navigation';
 import { verifyAdminPassword } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,18 +20,17 @@ function SubmitButton() {
 export default function LoginForm() {
   const { toast } = useToast();
   
-  const [state, formAction] = useActionState(async (_:any, formData: FormData) => {
-    const password = formData.get('password') as string;
-    const result = await verifyAdminPassword(password);
-    if (!result.success) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: result.message
-        })
+  const [state, formAction] = useActionState(verifyAdminPassword, undefined);
+
+  useEffect(() => {
+    if (state?.message) {
+      toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: state.message
+      })
     }
-    // The redirect is now handled by the server action, so no client-side navigation is needed.
-  }, { success: false, message: '' });
+  }, [state, toast]);
 
 
   return (
