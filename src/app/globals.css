@@ -85,7 +85,7 @@
 
 @layer utilities {
   .animation-pulse-vanish {
-    animation: pulse-vanish 2s ease-in-out 2;
+    animation: pulse-vanish 0.5s ease-in-out 2;
   }
 
   @keyframes pulse-vanish {

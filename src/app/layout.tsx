@@ -20,7 +20,7 @@ export default function RootLayout({
     // Simulate loading time
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 4000); // The animation is 2s and runs twice, so 4s total
+    }, 1000); // Animation is 0.5s and runs twice, so 1s total
 
     return () => clearTimeout(timer);
   }, []);
