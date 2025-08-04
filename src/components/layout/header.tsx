@@ -5,6 +5,8 @@ import { Flame, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -16,26 +18,34 @@ const navLinks = [
 
 export default function Header() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <div className="mr-auto flex items-center">
-          <Link href="/" className="flex items-center gap-2 mr-8">
-            <Flame className="h-6 w-6 text-primary" />
-            <span className="font-bold font-headline text-lg">Garena Gears</span>
-          </Link>
-        </div>
+        <Link href="/" className="flex items-center gap-2 mr-6">
+          <Flame className="h-6 w-6 text-primary" />
+          <span className="font-bold font-headline text-lg">Garena Gears</span>
+        </Link>
+        
+        <div className="flex-1" />
 
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           {navLinks.map(({ href, label }) => (
-            <Link key={label} href={href} className="transition-colors hover:text-primary">
+            <Link 
+              key={label} 
+              href={href} 
+              className={cn(
+                "transition-colors hover:text-primary",
+                pathname === href && "text-primary underline decoration-primary underline-offset-4"
+              )}
+            >
               {label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex flex-1 items-center justify-end md:hidden">
+        <div className="flex items-center justify-end md:hidden ml-4">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon">
@@ -54,7 +64,10 @@ export default function Header() {
                   <Link
                     key={label}
                     href={href}
-                    className="text-lg font-medium transition-colors hover:text-primary"
+                    className={cn(
+                      "text-lg font-medium transition-colors hover:text-primary",
+                      pathname === href && "text-primary"
+                    )}
                     onClick={() => setIsSheetOpen(false)}
                   >
                     {label}
