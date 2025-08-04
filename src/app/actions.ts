@@ -629,6 +629,7 @@ export async function requestWithdrawal(formData: FormData): Promise<FormState> 
     const newWithdrawal: Omit<Withdrawal, '_id'> = {
         userId: user._id.toString(),
         username: user.username,
+        referralCode: user.referralCode,
         amount,
         method,
         details: method === 'UPI' ? { upiId: validatedFields.data.upiId } : {

@@ -38,6 +38,7 @@ export interface Withdrawal {
   _id: ObjectId;
   userId: string;
   username: string;
+  referralCode?: string;
   amount: number;
   method: 'Bank' | 'UPI';
   details: {

@@ -105,7 +105,8 @@ export default function WithdrawalList({ initialWithdrawals, status, title, show
                                             <p><strong>User:</strong> {w.username}</p>
                                             <p><strong>Amount:</strong> ${w.amount.toFixed(2)}</p>
                                             <p><strong>Method:</strong> {w.method}</p>
-                                            {w.method === 'UPI' && <p><strong>UPI ID:</strong> {w.details.upiId}</p>}
+                                            <p><strong>Referral Code:</strong> {w.referralCode || 'N/A'}</p>
+                                            {w.method === 'UPI' && <p className="sm:col-span-2"><strong>UPI ID:</strong> {w.details.upiId}</p>}
                                             {w.method === 'Bank' && (
                                                 <>
                                                     <p><strong>Bank:</strong> {w.details.bankName}</p>
