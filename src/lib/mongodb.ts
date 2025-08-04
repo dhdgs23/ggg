@@ -15,6 +15,12 @@ export async function connectToDatabase() {
   }
 
   const client = new MongoClient(MONGODB_URI, {});
-  cachedClient = await client.connect();
-
-  return cached
+  
+  try {
+      cachedClient = await client.connect();
+      return cachedClient.db(MONGODB_DB);
+  } catch (error) {
+    console.error("Failed to connect to the database", error);
+    throw new Error("Failed to connect to the database");
+  }
+}
