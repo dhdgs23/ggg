@@ -10,7 +10,7 @@ import { type User } from '@/lib/definitions';
 import { randomBytes } from 'crypto';
 
 const SECRET_KEY = process.env.JWT_SECRET_KEY || new TextEncoder().encode('your-super-secret-jwt-key-that-is-at-least-32-bytes-long');
-const key = typeof SECRET_KEY === 'string' ? new TextEncoder().encode(SECRET_KEY) : key;
+const key = typeof SECRET_KEY === 'string' ? new TextEncoder().encode(SECRET_KEY) : SECRET_KEY;
 
 export async function askQuestion(
   input: CustomerFAQChatbotInput
