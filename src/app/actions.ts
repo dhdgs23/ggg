@@ -446,3 +446,53 @@ export async function deleteUser(userId: string): Promise<{success: boolean}> {
     revalidatePath('/admin/accounts');
     return { success: true };
 }
+
+const PAGE_SIZE = 5;
+
+export async function getOrdersForAdmin(
+  page: number, 
+  sort: string, 
+  search: string, 
+  status: ('Pending UTR' | 'Processing' | 'Completed' | 'Failed')[]
+) {
+  const db = await connectToDatabase();
+  const skip = (page - 1) * PAGE_SIZE;
+
+  let query: any = { status: { $in: status } };
+  if (search) {
+      query.referralCode = search;
+  }
+
+  const orders = await db.collection<Order>('orders')
+      .find(query)
+      .sort({ createdAt: sort === 'asc' ? 1 : -1 })
+      .skip(skip)
+      .limit(PAGE_SIZE)
+      .toArray();
+
+  const totalOrders = await db.collection('orders').countDocuments(query);
+  const hasMore = skip + orders.length < totalOrders;
+  return { orders: JSON.parse(JSON.stringify(orders)), hasMore };
+}
+
+export async function getUsersForAdmin(page: number, sort: string, search: string) {
+  const db = await connectToDatabase();
+  const skip = (page - 1) * PAGE_SIZE;
+
+  let query: any = {};
+  if (search) {
+    query.referralCode = search;
+  }
+  
+  const users = await db.collection<User>('users')
+    .find(query)
+    .sort({ createdAt: sort === 'asc' ? 1 : -1 })
+    .skip(skip)
+    .limit(PAGE_SIZE)
+    .toArray();
+
+  const totalUsers = await db.collection('users').countDocuments(query);
+  const hasMore = skip + users.length < totalUsers;
+
+  return { users: JSON.parse(JSON.stringify(users)), hasMore };
+}

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, ArrowUpDown, Loader2, Search } from 'lucide-react';
-import { updateOrderStatus } from '@/app/actions';
+import { updateOrderStatus, getOrdersForAdmin } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 
@@ -16,13 +16,13 @@ interface OrderListProps {
     status: ('Pending UTR' | 'Processing' | 'Completed' | 'Failed')[];
     title: string;
     showActions?: boolean;
-    getMoreOrders: (page: number, sort: string, search: string) => Promise<{orders: Order[], hasMore: boolean}>;
+    initialHasMore: boolean;
 }
 
-export function OrderList({ initialOrders, status, title, showActions = false, getMoreOrders }: OrderListProps) {
+export function OrderList({ initialOrders, status, title, showActions = false, initialHasMore }: OrderListProps) {
     const [orders, setOrders] = useState<Order[]>(initialOrders);
     const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(initialOrders.length > 0);
+    const [hasMore, setHasMore] = useState(initialHasMore);
     const [sort, setSort] = useState(useSearchParams().get('sort') || 'asc');
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
@@ -34,7 +34,7 @@ export function OrderList({ initialOrders, status, title, showActions = false, g
         startTransition(async () => {
             const nextPage = page + 1;
             const search = searchParams.get('search') || '';
-            const { orders: newOrders, hasMore: newHasMore } = await getMoreOrders(nextPage, sort, search);
+            const { orders: newOrders, hasMore: newHasMore } = await getOrdersForAdmin(nextPage, sort, search, status);
             setOrders(prev => [...prev, ...newOrders]);
             setHasMore(newHasMore);
             setPage(nextPage);

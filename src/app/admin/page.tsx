@@ -1,35 +1,9 @@
 
 import { OrderList } from './_components/order-list';
-import { connectToDatabase } from '@/lib/mongodb';
-import { Order } from '@/lib/definitions';
-import { isAdminAuthenticated } from '@/app/actions';
+import { isAdminAuthenticated, getOrdersForAdmin } from '@/app/actions';
 import { redirect } from 'next/navigation';
 
-const PAGE_SIZE = 5;
-
-async function getOrdersForPage(page: number, sort: string, search: string) {
-  'use server';
-  const db = await connectToDatabase();
-  const skip = (page - 1) * PAGE_SIZE;
-  const status = ['Pending UTR', 'Processing'];
-
-  let query: any = { status: { $in: status } };
-  if (search) {
-      query.referralCode = search;
-  }
-
-  const orders = await db.collection<Order>('orders')
-      .find(query)
-      .sort({ createdAt: sort === 'asc' ? 1 : -1 })
-      .skip(skip)
-      .limit(PAGE_SIZE)
-      .toArray();
-
-  const totalOrders = await db.collection('orders').countDocuments(query);
-  const hasMore = skip + orders.length < totalOrders;
-  return { orders: JSON.parse(JSON.stringify(orders)), hasMore };
-}
-
+const status = ['Pending UTR', 'Processing'];
 
 export default async function AdminHomePage({
   searchParams,
@@ -43,15 +17,15 @@ export default async function AdminHomePage({
   const sort = typeof searchParams.sort === 'string' ? searchParams.sort : 'asc';
   const search = typeof searchParams.search === 'string' ? searchParams.search : '';
 
-  const { orders } = await getOrdersForPage(page, sort, search);
+  const { orders, hasMore } = await getOrdersForAdmin(page, sort, search, status);
 
   return (
     <OrderList
       initialOrders={orders}
       title="Pending Orders"
-      status={['Pending UTR', 'Processing']}
+      status={status}
       showActions={true}
-      getMoreOrders={getOrdersForPage}
+      initialHasMore={hasMore}
     />
   );
 }
