@@ -8,7 +8,7 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { type User, type Order, type Product, type Withdrawal } from '@/lib/definitions';
 import { randomBytes } from 'crypto';
-import { ensureUserId } from '@/lib/user-actions';
+import { ensureUserId, getUserId } from '@/lib/user-actions';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -277,6 +277,32 @@ export async function generateReferralLink(): Promise<{ success: boolean; link?:
 }
 
 // --- Order Actions ---
+
+export async function getOrdersForUser(): Promise<Order[]> {
+    noStore();
+    const userId = await getUserId();
+    if (!userId) {
+        return [];
+    }
+
+    try {
+        const db = await connectToDatabase();
+        const ordersFromDb = await db.collection<Order>('orders')
+            .find({ userId })
+            .sort({ createdAt: -1 })
+            .toArray();
+
+        // Manually serialize the data to convert ObjectId and Date to strings
+        return ordersFromDb.map((order: any) => ({
+            ...order,
+            _id: order._id.toString(),
+            createdAt: order.createdAt.toISOString(),
+        }));
+    } catch (error) {
+        console.error("Failed to fetch user orders:", error);
+        return [];
+    }
+}
 
 const redeemCodeSchema = z.object({
   gamingId: z.string().min(1, 'Gaming ID is required'),

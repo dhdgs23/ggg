@@ -1,7 +1,6 @@
 'use client';
 
-import { getUserId } from '@/lib/user-actions';
-import { connectToDatabase } from '@/lib/mongodb';
+import { getOrdersForUser } from '@/app/actions';
 import { Order } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,21 +12,6 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-// Using a mock fetch function as we can't call server actions from a useEffect hook
-// in this file structure. In a real app, this would be an API endpoint.
-async function getOrders(userId: string): Promise<Order[]> {
-  try {
-    const response = await fetch(`/api/orders?userId=${userId}`);
-    if (!response.ok) {
-      console.error('Failed to fetch orders');
-      return [];
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    return [];
-  }
-}
 
 const FormattedDate = ({ dateString }: { dateString: string }) => {
     const [mounted, setMounted] = useState(false);
@@ -61,14 +45,9 @@ export default function OrderPage() {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      const userId = await getUserId();
-      if (userId) {
-        // This is a placeholder for fetching user-specific data on the client
-        // In a real app, you would fetch this from an API route
-        const db = await connectToDatabase();
-        const userOrders = await db.collection('orders').find({ userId }).sort({ createdAt: -1 }).toArray();
-        setOrders(JSON.parse(JSON.stringify(userOrders)));
-      }
+      setIsLoading(true);
+      const userOrders = await getOrdersForUser();
+      setOrders(userOrders);
       setIsLoading(false);
     };
     fetchOrders();
