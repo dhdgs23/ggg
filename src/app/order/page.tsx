@@ -128,13 +128,13 @@ export default function OrderPage() {
                  <div className="mt-4 space-y-1 text-sm">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Original Price:</span>
-                        <span className="font-medium">₹{order.productPrice}</span>
+                        <span className="font-medium font-sans">₹{order.productPrice}</span>
                     </div>
                     <div className="flex justify-between text-amber-600">
                         <span className="font-medium flex items-center gap-1"><Coins className="w-4 h-4"/>Coins Used:</span>
-                        <span className="font-medium">- ₹{order.coinsUsed}</span>
+                        <span className="font-medium font-sans">- ₹{order.coinsUsed}</span>
                     </div>
-                     <div className="flex justify-between font-bold text-base border-t pt-1 mt-1">
+                     <div className="flex justify-between font-bold text-base font-sans border-t pt-1 mt-1">
                         <span>Final Price:</span>
                         <span>₹{order.finalPrice}</span>
                     </div>

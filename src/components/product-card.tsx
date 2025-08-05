@@ -51,7 +51,7 @@ export default function ProductCard({ product, user }: ProductCardProps) {
         <CardContent className="flex-grow p-4">
           <CardTitle className="text-lg font-headline font-semibold">{product.name}</CardTitle>
           {product.coinsApplicable > 0 && (
-            <div className="text-xs text-amber-600 font-semibold mt-1 flex items-center gap-1">
+            <div className="text-xs text-amber-600 font-semibold mt-1 flex items-center font-sans gap-1">
               <Coins className="w-3 h-3" />
               Use {product.coinsApplicable} Coins & Get it for ₹{finalPrice}
             </div>

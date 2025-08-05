@@ -191,8 +191,8 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
                     </div>
                     <div>
                         <h3 className="font-semibold">{product.name}</h3>
-                        <p className="text-sm text-muted-foreground line-through">Original Price: ₹{product.price}</p>
-                        <p className="text-sm text-amber-600 flex items-center gap-1"><Coins className="w-4 h-4"/> Coins Applied: -₹{coinsToUse}</p>
+                        <p className="text-sm text-muted-foreground line-through font-sans">Original Price: ₹{product.price}</p>
+                        <p className="text-sm text-amber-600 flex items-center font-sans gap-1"><Coins className="w-4 h-4"/> Coins Applied: -₹{coinsToUse}</p>
                         <p className="text-2xl font-bold text-primary font-sans">Final Price: ₹{finalPrice}</p>
                     </div>
                 </div>
