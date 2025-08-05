@@ -1,7 +1,4 @@
-# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
-#
-# To allow all robots to crawl your site, use the following:
 User-agent: *
 Allow: /
 
-Sitemap: /sitemap.xml
+Sitemap: https://www.garenagears.com/sitemap.xml
