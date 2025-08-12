@@ -855,7 +855,7 @@ const productsToSeed = [
   { name: "MP40 - Predatory Cobra", price: 5000, imageUrl: "/img/mp40.png", dataAiHint: 'cobra snake', coinsApplicable: 2000 },
   { name: "AK47 - Blue Flame Draco", price: 5000, imageUrl: "/img/ak47.png", dataAiHint: 'blue dragon', coinsApplicable: 2000 },
   { name: "LOL Emote", price: 3000, imageUrl: "/img/lol.png", dataAiHint: 'laughing face', coinsApplicable: 1000 },
-  { name: "MP40 - UCHIHA'S LEGACY", price: 4000, imageUrl: "/img/mp40-uchiha.png", dataAiHint: 'anime weapon', coinsApplicable: 2500 },
+  { name: "MP40 - UCHIHA'S LEGACY", price: 4000, imageUrl: "/img/mp40u.png", dataAiHint: 'anime weapon', coinsApplicable: 2500 },
 ];
 
 async function seedProducts() {
