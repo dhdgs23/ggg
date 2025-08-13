@@ -5,6 +5,8 @@ import { getProducts, getUserData } from './actions';
 import { type Metadata } from 'next';
 import { type Product, type User } from '@/lib/definitions';
 import CoinSystem from '@/components/coin-system';
+import { ObjectId } from 'mongodb';
+
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.garenagears.com'),
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
 
 
 export default async function Home() {
-  const products: Product[] = await getProducts();
+  const products: (Product & { _id: ObjectId | string })[] = await getProducts();
   const user: User | null = await getUserData();
 
   return (
@@ -35,9 +37,9 @@ export default async function Home() {
             Purchase Item Now
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
-            {products.map((product: Product) => (
+            {products.map((product) => (
               <ProductCard
-                key={product._id}
+                key={product._id.toString()}
                 product={product}
                 user={user}
               />

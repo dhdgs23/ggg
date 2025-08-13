@@ -26,7 +26,7 @@ export interface User {
 
 
 export interface Product {
-    _id: string; // From MongoDB
+    _id: ObjectId; // From MongoDB
     name: string;
     price: number;
     quantity: number;

@@ -20,9 +20,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import Link from 'next/link';
+import { type ObjectId } from 'mongodb';
+
+
+// The product passed to this modal has its _id serialized to a string
+interface ProductWithStringId extends Omit<Product, '_id'> {
+  _id: string;
+}
 
 interface PurchaseModalProps {
-  product: Product;
+  product: ProductWithStringId;
   user: User | null;
   onClose: () => void;
 }

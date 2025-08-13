@@ -858,6 +858,7 @@ async function seedProducts() {
       update: {
         $setOnInsert: {
             ...p,
+            _id: new ObjectId(), // Generate new ID on insert
             quantity: 1,
             isAvailable: true,
             isVanished: false,

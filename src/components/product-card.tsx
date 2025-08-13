@@ -16,10 +16,11 @@ import type { Product, User } from '@/lib/definitions';
 import { Ban, Coins, Timer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { type ObjectId } from 'mongodb';
 
 
 interface ProductCardProps {
-  product: Product;
+  product: Product & { _id: string | ObjectId }; // Allow string for serialized product
   user: User | null;
 }
 
@@ -103,13 +104,16 @@ export default function ProductCard({ product, user }: ProductCardProps) {
     setIsModalOpen(true);
   }
 
+  // Ensure product has a string ID for the PurchaseModal
+  const productWithStrId = { ...product, _id: product._id.toString() };
+
   return (
     <>
       <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
         <CardHeader className="p-0">
           <div className="relative aspect-video">
             <Image src={product.imageUrl} alt={product.name} fill className="object-cover" data-ai-hint={product.dataAiHint}/>
-            {product.endDate && <CountdownTimer endDate={product.endDate} />}
+            {product.endDate && <CountdownTimer endDate={new Date(product.endDate)} />}
           </div>
         </CardHeader>
         <CardContent className="flex-grow p-4">
@@ -142,7 +146,7 @@ export default function ProductCard({ product, user }: ProductCardProps) {
           )}
         </CardFooter>
       </Card>
-      {isModalOpen && <PurchaseModal product={product} user={user} onClose={() => setIsModalOpen(false)} />}
+      {isModalOpen && <PurchaseModal product={productWithStrId} user={user} onClose={() => setIsModalOpen(false)} />}
     </>
   );
 }
