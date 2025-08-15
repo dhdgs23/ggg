@@ -103,8 +103,9 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        name: "Garena Gears",
+        name: "Garena",
         description: `Order for ${product.name}`,
+        image: "https://freefire-max-garena.vercel.app/img/garena.png",
         order_id: razorpayOrder.id,
         handler: async function (response: any) {
             const formData = new FormData();
@@ -127,6 +128,8 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
         },
         prefill: {
             name: user.gamingId,
+            email: "support@garenagears.com",
+            contact: "+919898989898"
         },
         theme: {
             color: "#F97316"
