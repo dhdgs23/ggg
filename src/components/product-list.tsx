@@ -68,7 +68,7 @@ export default function ProductList({ initialProducts, user }: ProductListProps)
         </h2>
         
         <div className="flex flex-row items-center justify-end gap-2 mb-8 md:mb-12">
-            <div className="relative flex-grow max-w-xs md:max-w-sm">
+            <div className="relative flex-grow max-w-[180px] sm:max-w-xs md:max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                     type="text"
@@ -79,7 +79,7 @@ export default function ProductList({ initialProducts, user }: ProductListProps)
                 />
             </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-[140px] md:w-[180px] flex-shrink-0">
+                <SelectTrigger className="w-[100px] md:w-[140px] flex-shrink-0">
                     <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
                 <SelectContent>
