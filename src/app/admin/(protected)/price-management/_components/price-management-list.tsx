@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -103,8 +104,8 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
       </CardHeader>
       <CardContent className="space-y-6">
         {products.map((product) => (
-          <form key={product._id} action={(formData) => handleUpdate(product._id, formData)}>
-            <input type="hidden" name="isCoinProduct" value={String(product.isCoinProduct || false)} />
+          <form key={product._id} action={(formData) => handleUpdate(product._id.toString(), formData)}>
+            <input type="hidden" name="isCoinProduct" value={String(!!product.isCoinProduct)} />
             <Card>
               <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="space-y-2 lg:col-span-2">
@@ -223,7 +224,7 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleVanish(product._id)}>
+                        <AlertDialogAction onClick={() => handleVanish(product._id.toString())}>
                             Yes, Vanish Product
                         </AlertDialogAction>
                         </AlertDialogFooter>

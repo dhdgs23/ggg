@@ -1,3 +1,4 @@
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -898,101 +899,56 @@ export async function updateWithdrawalStatus(withdrawalId: string, status: 'Comp
 }
 
 // --- Product Management Actions ---
-const productsToSeed = [
-  { name: "100 Diamonds", price: 80, imageUrl: "/img/100.png", dataAiHint: 'diamond jewel', coinsApplicable: 50, displayOrder: 1, category: "Diamonds" },
-  { name: "310 Diamonds", price: 240, imageUrl: "/img/310.png", dataAiHint: 'diamond jewel', coinsApplicable: 150, displayOrder: 2, category: "Diamonds" },
-  { name: "520 Diamonds", price: 400, imageUrl: "/img/520.png", dataAiHint: 'diamond jewel', coinsApplicable: 200, displayOrder: 3, category: "Diamonds" },
-  { name: "1060 Diamonds", price: 800, imageUrl: "/img/1060.png", dataAiHint: 'diamond jewel', coinsApplicable: 300, displayOrder: 4, category: "Diamonds" },
-  { name: "2180 Diamonds", price: 1600, imageUrl: "/img/2180.png", dataAiHint: 'diamond jewel', coinsApplicable: 900, displayOrder: 5, category: "Diamonds" },
-  { name: "5600 Diamonds", price: 4000, imageUrl: "/img/5600.png", dataAiHint: 'diamond jewel', coinsApplicable: 2000, displayOrder: 6, category: "Diamonds" },
-  { name: "Weekly Membership", price: 159, imageUrl: "/img/weekly.png", dataAiHint: 'membership card', coinsApplicable: 59, displayOrder: 7, category: "Membership" },
-  { name: "Monthly Membership", price: 800, imageUrl: "/img/monthly.png", dataAiHint: 'membership card', coinsApplicable: 300, displayOrder: 8, category: "Membership" },
-  { name: "Itachi Uchiha Bundle", price: 5000, imageUrl: "/img/itachi.png", dataAiHint: 'anime character', coinsApplicable: 4000, displayOrder: 9, category: "Bundles" },
-  { name: "MP40 - Predatory Cobra", price: 5000, imageUrl: "/img/mp40.png", dataAiHint: 'cobra snake', coinsApplicable: 2000, displayOrder: 10, category: "Gun Skins" },
-  { name: "AK47 - Blue Flame Draco", price: 5000, imageUrl: "/img/ak47.png", dataAiHint: 'blue dragon', coinsApplicable: 2000, displayOrder: 11, category: "Gun Skins" },
-  { name: "LOL Emote", price: 3000, imageUrl: "/img/lol.png", dataAiHint: 'laughing face', coinsApplicable: 1000, displayOrder: 12, category: "Emotes" },
-  { 
-    name: "MP40 - UCHIHA'S LEGACY", 
-    price: 4000, 
-    imageUrl: "/img/mp40u.png", 
-    dataAiHint: 'anime weapon', 
-    coinsApplicable: 2500,
-    endDate: new Date('2024-08-14T00:00:00+05:30'), // Aug 14, 12 AM IST
-    displayOrder: 13,
-    category: "Limited Time"
-  },
-  { 
-    name: "Store Coin",
-    price: 500,
-    purchasePrice: 300,
-    quantity: 2000,
-    imageUrl: "/img/store-coin.png",
-    dataAiHint: "gold coins",
-    isAvailable: true,
-    isVanished: false,
-    coinsApplicable: 0,
-    isCoinProduct: true,
-    displayOrder: 21,
-    category: "Coins"
-  },
-];
 
-async function seedProducts() {
-  const db = await connectToDatabase();
-  const productCollection = db.collection<Product>('products');
-  
-  console.log('Ensuring products are seeded correctly...');
-  
-  const bulkOps = productsToSeed.map(p => ({
-    updateOne: {
-      filter: { name: p.name },
-      update: {
-        $set: { category: p.category, purchasePrice: p.purchasePrice },
-        $setOnInsert: {
-            ...p,
-            _id: new ObjectId(), // Generate new ID on insert
-            quantity: p.quantity || 1,
-            isAvailable: p.isAvailable !== undefined ? p.isAvailable : true,
-            isVanished: false,
-            isCoinProduct: p.isCoinProduct || false,
-        }
-      },
-      upsert: true,
-    },
-  }));
-
-  if (bulkOps.length > 0) {
-    await productCollection.bulkWrite(bulkOps as any);
-    console.log(`Product seeding/update check complete.`);
-  }
-}
-  
-seedProducts().catch(console.error);
-  
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts() {
     noStore();
     const db = await connectToDatabase();
     const productsFromDb = await db.collection<Product>('products')
-      .find({ isVanished: false })
+      .find({ isVanished: { $ne: true } })
       .sort({ displayOrder: 1 })
       .toArray();
 
     return JSON.parse(JSON.stringify(productsFromDb));
 }
 
-const productUpdateSchema = z.object({
-    name: z.string().min(3, 'Product name must be at least 3 characters.'),
-    price: z.coerce.number().positive('Price must be a positive number.'),
-    purchasePrice: z.coerce.number().optional(),
-    quantity: z.coerce.number().int().positive('Quantity must be a positive integer.'),
-    isAvailable: z.enum(['on', 'off']).optional(),
-    coinsApplicable: z.coerce.number().int().min(0, 'Applicable coins cannot be negative.'),
-    endDate: z.string().optional(),
-    imageUrl: z.string().url('Must be a valid URL.'),
-    displayOrder: z.coerce.number().int().min(1, 'Display order must be a positive number.'),
-    category: z.string().optional(),
-    isCoinProduct: z.enum(['true', 'false']).optional(),
+const baseProductSchema = z.object({
+  name: z.string().min(3, 'Product name must be at least 3 characters.'),
+  price: z.coerce.number().positive('Price must be a positive number.'),
+  quantity: z.coerce.number().int().positive('Quantity must be a positive integer.'),
+  isAvailable: z.enum(['on', 'off']).optional(),
+  endDate: z.string().optional(),
+  imageUrl: z.string().url('Must be a valid URL.'),
+  displayOrder: z.coerce.number().int().min(1, 'Display order must be a positive number.'),
+  category: z.string().optional(),
+  isCoinProduct: z.enum(['true', 'false']),
+  purchasePrice: z.coerce.number().optional(),
+  coinsApplicable: z.coerce.number().optional(),
 });
+
+const productUpdateSchema = baseProductSchema.refine(
+    (data) => {
+        if (data.isCoinProduct === 'true') {
+            return data.purchasePrice !== undefined && data.purchasePrice > 0;
+        }
+        return true;
+    },
+    {
+        message: 'Purchase price must be a positive number for coin products.',
+        path: ['purchasePrice'],
+    }
+).refine(
+    (data) => {
+        if (data.isCoinProduct === 'false') {
+            return data.coinsApplicable !== undefined && data.coinsApplicable >= 0;
+        }
+        return true;
+    },
+    {
+        message: 'Applicable coins must be a non-negative number for normal products.',
+        path: ['coinsApplicable'],
+    }
+);
+
 
 export async function updateProduct(productId: string, formData: FormData): Promise<{ success: boolean; message: string }> {
     const isAdmin = await isAdminAuthenticated();
@@ -1004,15 +960,13 @@ export async function updateProduct(productId: string, formData: FormData): Prom
     const validatedFields = productUpdateSchema.safeParse(rawFormData);
     
     if (!validatedFields.success) {
-        return { success: false, message: validatedFields.error.errors.map(e => e.message).join(', ') };
+        return { success: false, message: validatedFields.error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join(', ') };
     }
 
     const { name, price, quantity, imageUrl, displayOrder, category, purchasePrice } = validatedFields.data;
     const isAvailable = rawFormData.isAvailable === 'on';
     const endDate = validatedFields.data.endDate ? new Date(validatedFields.data.endDate) : undefined;
-    const isCoinProduct = rawFormData.isCoinProduct === 'true';
-
-    // For coin products, coinsApplicable is 0. For normal products, it comes from the form.
+    const isCoinProduct = validatedFields.data.isCoinProduct === 'true';
     const coinsApplicable = isCoinProduct ? 0 : validatedFields.data.coinsApplicable;
     
 
@@ -1046,7 +1000,6 @@ export async function addProduct(isCoinProduct: boolean): Promise<{ success: boo
     
     const db = await connectToDatabase();
 
-    // Find the highest current display order
     const lastProduct = await db.collection<Product>('products').find().sort({ displayOrder: -1 }).limit(1).toArray();
     const newDisplayOrder = lastProduct.length > 0 ? (lastProduct[0].displayOrder || 0) + 1 : 1;
 
