@@ -124,10 +124,13 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
 
             if (verificationResult.success) {
                 toast({ title: 'Success', description: verificationResult.message });
-                 if (product.isCoinProduct) {
-                    goToOrderPage();
+                 if (!product.isCoinProduct) {
+                    // For normal products, show the processing message
+                    // The step is already 'processing'
+                 } else {
+                    // For coin products, close the modal
+                    handleClose();
                  }
-                // The step is already 'processing', the UI will show the right message for normal products
             } else {
                 toast({ variant: 'destructive', title: 'Payment Failed', description: verificationResult.message });
                 handleClose();
