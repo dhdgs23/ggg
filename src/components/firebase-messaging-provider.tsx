@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { getMessaging } from 'firebase/messaging';
 import { getToken } from 'firebase/messaging';
-import { app } from '@/lib/firebase';
+import { app } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 import { saveFcmToken } from '@/app/actions';
 

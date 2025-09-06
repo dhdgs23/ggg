@@ -11,6 +11,8 @@
 
 
 
+
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -27,7 +29,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { sendRedeemCodeNotification } from '@/lib/email';
 import { ObjectId } from 'mongodb';
 import Razorpay from 'razorpay';
-import { adminMessaging } from '@/lib/firebase';
+import { sendPushNotification, sendMulticastPushNotification } from '@/lib/push-notifications';
 
 
 const key = new TextEncoder().encode(process.env.SESSION_SECRET || 'your-fallback-secret-for-session');
@@ -1464,24 +1466,12 @@ export async function sendNotification(formData: FormData): Promise<{ success: b
 
     // Send push notification if user has a token
     if (user.fcmToken) {
-        try {
-            await adminMessaging.send({
-                token: user.fcmToken,
-                notification: {
-                    title: 'Garena Gears',
-                    body: message,
-                    imageUrl: imageUrl || undefined,
-                },
-                webpush: {
-                    fcmOptions: {
-                        link: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002'
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Failed to send push notification:', error);
-            // Don't fail the whole action if push notification fails
-        }
+       await sendPushNotification({
+            token: user.fcmToken,
+            title: 'Garena Gears',
+            body: message,
+            imageUrl: imageUrl || undefined,
+        });
     }
 
 
@@ -1531,23 +1521,12 @@ export async function sendNotificationToAll(formData: FormData): Promise<{ succe
     // Send push notifications
     const tokens = allUsers.map(u => u.fcmToken).filter((t): t is string => !!t);
     if (tokens.length > 0) {
-        try {
-            await adminMessaging.sendEachForMulticast({
-                tokens,
-                notification: {
-                    title: 'Garena Gears',
-                    body: message,
-                    imageUrl: imageUrl || undefined,
-                },
-                 webpush: {
-                    fcmOptions: {
-                        link: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002'
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error sending multicast push notifications:', error);
-        }
+        await sendMulticastPushNotification({
+            tokens,
+            title: 'Garena Gears',
+            body: message,
+            imageUrl: imageUrl || undefined,
+        });
     }
 
 
