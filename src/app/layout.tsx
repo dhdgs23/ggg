@@ -7,6 +7,8 @@ import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { useState, useEffect } from 'react';
 import LoadingScreen from '@/components/loading-screen';
+import { getNotificationsForUser, getUserData } from './actions';
+import type { Notification, User } from '@/lib/definitions';
 
 
 export default function RootLayout({
@@ -15,8 +17,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
+    const fetchInitialData = async () => {
+      const userData = await getUserData();
+      setUser(userData);
+      if (userData) {
+        const userNotifications = await getNotificationsForUser();
+        setNotifications(userNotifications);
+      }
+    };
+
+    fetchInitialData();
+
     // Simulate loading time
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -37,7 +52,7 @@ export default function RootLayout({
       <body className={cn('font-body antialiased flex flex-col min-h-screen')}>
         {isLoading && <LoadingScreen />}
         <div className={cn(isLoading ? 'hidden' : 'flex flex-col flex-1')}>
-          <Header />
+          <Header user={user} notifications={notifications} />
           <main className="flex-grow">{children}</main>
           <Footer />
         </div>

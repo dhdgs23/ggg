@@ -5,6 +5,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -13,7 +14,7 @@ import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { type User, type Order, type Product, type Withdrawal, type LegacyUser } from '@/lib/definitions';
+import { type User, type Order, type Product, type Withdrawal, type LegacyUser, type Notification } from '@/lib/definitions';
 import { randomBytes, createHmac } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -1399,4 +1400,79 @@ export async function getHiddenUsersForAdmin() {
       .toArray();
 
     return JSON.parse(JSON.stringify(usersFromDb));
+}
+
+// --- Notification Actions ---
+
+const notificationSchema = z.object({
+    gamingId: z.string().min(1, 'Gaming ID is required.'),
+    message: z.string().min(1, 'Message is required.'),
+    imageUrl: z.string().url().optional().or(z.literal('')),
+});
+
+export async function sendNotification(formData: FormData): Promise<{ success: boolean, message: string }> {
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) {
+        return { success: false, message: 'Unauthorized' };
+    }
+
+    const validatedFields = notificationSchema.safeParse(Object.fromEntries(formData));
+
+    if (!validatedFields.success) {
+        return { success: false, message: 'Invalid data.' };
+    }
+
+    const { gamingId, message, imageUrl } = validatedFields.data;
+
+    const db = await connectToDatabase();
+    const user = await db.collection<User>('users').findOne({ gamingId });
+
+    if (!user) {
+        return { success: false, message: 'User with that Gaming ID does not exist.' };
+    }
+
+    const newNotification: Omit<Notification, '_id'> = {
+        gamingId,
+        message,
+        imageUrl: imageUrl || undefined,
+        isRead: false,
+        createdAt: new Date(),
+    };
+
+    await db.collection<Notification>('notifications').insertOne(newNotification as Notification);
+
+    revalidatePath('/'); // Revalidate to show notification icon in header
+    return { success: true, message: 'Notification sent successfully!' };
+}
+
+export async function getNotificationsForUser(): Promise<Notification[]> {
+    noStore();
+    const gamingId = cookies().get('gaming_id')?.value;
+    if (!gamingId) {
+        return [];
+    }
+    
+    const db = await connectToDatabase();
+    const notifications = await db.collection<Notification>('notifications')
+        .find({ gamingId })
+        .sort({ createdAt: -1 })
+        .toArray();
+    
+    return JSON.parse(JSON.stringify(notifications));
+}
+
+export async function markNotificationsAsRead(): Promise<{ success: boolean }> {
+    const gamingId = cookies().get('gaming_id')?.value;
+    if (!gamingId) {
+        return { success: false };
+    }
+
+    const db = await connectToDatabase();
+    await db.collection<Notification>('notifications').updateMany(
+        { gamingId, isRead: false },
+        { $set: { isRead: true } }
+    );
+    
+    revalidatePath('/'); // Revalidate to update unread count
+    return { success: true };
 }

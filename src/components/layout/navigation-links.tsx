@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
+import type { Notification } from '@/lib/definitions';
+import NotificationBell from './notification-bell';
+
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -17,9 +20,10 @@ const navLinks = [
 interface NavigationLinksProps {
   mobile?: boolean;
   onLinkClick?: () => void;
+  notifications: Notification[];
 }
 
-export default function NavigationLinks({ mobile, onLinkClick }: NavigationLinksProps) {
+export default function NavigationLinks({ mobile, onLinkClick, notifications = [] }: NavigationLinksProps) {
   const pathname = usePathname();
 
   if (mobile) {
@@ -44,6 +48,7 @@ export default function NavigationLinks({ mobile, onLinkClick }: NavigationLinks
 
   return (
     <>
+      {notifications.length > 0 && <NotificationBell notifications={notifications} />}
       <Button asChild className={cn(
         'bg-primary/10 hover:bg-primary/20 text-primary',
         pathname === '/order' && 'bg-destructive text-destructive-foreground hover:bg-destructive/90'

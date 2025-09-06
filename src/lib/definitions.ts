@@ -86,3 +86,12 @@ export interface Withdrawal {
   status: 'Pending' | 'Completed' | 'Failed';
   createdAt: Date;
 }
+
+export interface Notification {
+    _id: ObjectId;
+    gamingId: string;
+    message: string;
+    imageUrl?: string;
+    isRead: boolean;
+    createdAt: Date;
+}

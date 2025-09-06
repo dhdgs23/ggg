@@ -12,9 +12,15 @@ import {
 import { useState } from 'react';
 import NavigationLinks from './navigation-links';
 import Image from 'next/image';
+import type { User, Notification as NotificationType } from '@/lib/definitions';
+import NotificationBell from './notification-bell';
 
+interface HeaderProps {
+  user: User | null;
+  notifications: NotificationType[];
+}
 
-export default function Header() {
+export default function Header({ user, notifications }: HeaderProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   return (
@@ -27,10 +33,11 @@ export default function Header() {
 
         <div className="flex items-center gap-4">
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-             <NavigationLinks />
+             <NavigationLinks notifications={notifications} />
           </nav>
 
           <div className="flex items-center md:hidden">
+             {notifications.length > 0 && <NotificationBell notifications={notifications} />}
             <Button variant="ghost" size="icon" asChild>
               <Link href="/order">
                 <ShoppingCart className="h-5 w-5" />
@@ -57,7 +64,7 @@ export default function Header() {
                       Garena
                     </span>
                   </Link>
-                  <NavigationLinks mobile onLinkClick={() => setIsSheetOpen(false)} />
+                  <NavigationLinks mobile onLinkClick={() => setIsSheetOpen(false)} notifications={notifications} />
                 </div>
               </SheetContent>
             </Sheet>
