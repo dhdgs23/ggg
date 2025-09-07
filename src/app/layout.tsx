@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
