@@ -16,6 +16,8 @@ import EventModal from '@/components/event-modal';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { app } from '@/lib/firebase/client';
 
+const FCM_TOKEN_KEY = 'fcm_token';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -66,7 +68,6 @@ export default function RootLayout({
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         const messaging = getMessaging(app);
         
-        // Wait for the service worker to be ready
         await navigator.serviceWorker.register('/firebase-messaging-sw.js');
         const swRegistration = await navigator.serviceWorker.ready;
         
@@ -79,6 +80,8 @@ export default function RootLayout({
           });
           if (currentToken) {
             await saveFcmToken(currentToken);
+            // Save to local storage
+            localStorage.setItem(FCM_TOKEN_KEY, currentToken);
             // Optimistically update user state to avoid re-prompting
             setUser(prevUser => prevUser ? { ...prevUser, fcmToken: currentToken } : null);
           }
@@ -98,14 +101,17 @@ export default function RootLayout({
 
     // Set up foreground message listener
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-        const messaging = getMessaging(app);
-        const unsubscribe = onMessage(messaging, (payload) => {
-            console.log('Foreground message received.', payload);
-            // When a foreground message is received, simply re-fetch notifications
-            // to update the bell. This prevents a duplicate system notification.
-            fetchInitialData();
-        });
-        return () => unsubscribe(); // Unsubscribe on cleanup
+        try {
+            const messaging = getMessaging(app);
+            const unsubscribe = onMessage(messaging, (payload) => {
+                // When a foreground message is received, simply re-fetch notifications
+                // to update the bell. This prevents a duplicate system notification.
+                fetchInitialData();
+            });
+            return () => unsubscribe(); // Unsubscribe on cleanup
+        } catch (error) {
+            console.error("Firebase Messaging not initialized:", error);
+        }
     }
 
     return () => clearTimeout(timer);
@@ -113,8 +119,15 @@ export default function RootLayout({
   }, []);
 
   useEffect(() => {
-    if (user && !user.fcmToken) {
-      requestNotificationPermission();
+    if (user) {
+        const localToken = localStorage.getItem(FCM_TOKEN_KEY);
+        // Trigger permission/token refresh if:
+        // 1. User has no token in DB and no token in local storage.
+        // 2. User has a token in DB but it doesn't match the one in local storage.
+        // 3. User has no token in DB but has one in local storage (edge case, should re-sync).
+        if (!user.fcmToken || localToken !== user.fcmToken) {
+            requestNotificationPermission();
+        }
     }
   }, [user, requestNotificationPermission]);
 
