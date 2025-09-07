@@ -13,7 +13,7 @@ import { getEvents, getNotificationsForUser, getUserData, markNotificationAsRead
 import type { Event, Notification, User } from '@/lib/definitions';
 import PopupNotification from '@/components/popup-notification';
 import EventModal from '@/components/event-modal';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { app } from '@/lib/firebase/client';
 
 const FCM_TOKEN_KEY = 'fcm_token';
@@ -36,13 +36,14 @@ export default function RootLayout({
     setUser(userData);
     
     const allEvents = await getEvents();
-    const eventsSeen = sessionStorage.getItem('eventsSeen');
-
-    if (!eventsSeen) {
-      setEvents(allEvents);
-      if(allEvents.length > 0) {
-          setShowEventModal(true);
-      }
+    if (typeof window !== 'undefined') {
+        const eventsSeen = sessionStorage.getItem('eventsSeen');
+        if (!eventsSeen) {
+          setEvents(allEvents);
+          if(allEvents.length > 0) {
+              setShowEventModal(true);
+          }
+        }
     }
 
     if (userData) {
@@ -65,30 +66,29 @@ export default function RootLayout({
 
   const requestNotificationPermission = useCallback(async () => {
     try {
-      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-        const messaging = getMessaging(app);
-        
-        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        const swRegistration = await navigator.serviceWorker.ready;
-        
-        const permission = await Notification.requestPermission();
-        
-        if (permission === 'granted') {
-          const currentToken = await getToken(messaging, { 
-              vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-              serviceWorkerRegistration: swRegistration 
-          });
-          if (currentToken) {
-            await saveFcmToken(currentToken);
-            // Save to local storage
-            localStorage.setItem(FCM_TOKEN_KEY, currentToken);
-            // Optimistically update user state to avoid re-prompting
-            setUser(prevUser => prevUser ? { ...prevUser, fcmToken: currentToken } : null);
-          }
+        const isFCMSupported = await isSupported();
+        if (isFCMSupported && typeof window !== 'undefined' && 'serviceWorker' in navigator && 'Notification' in window) {
+            const messaging = getMessaging(app);
+            
+            await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const swRegistration = await navigator.serviceWorker.ready;
+            
+            const permission = await Notification.requestPermission();
+            
+            if (permission === 'granted') {
+              const currentToken = await getToken(messaging, { 
+                  vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+                  serviceWorkerRegistration: swRegistration 
+              });
+              if (currentToken) {
+                await saveFcmToken(currentToken);
+                localStorage.setItem(FCM_TOKEN_KEY, currentToken);
+                setUser(prevUser => prevUser ? { ...prevUser, fcmToken: currentToken } : null);
+              }
+            }
         }
-      }
     } catch (error) {
-      console.error('An error occurred while retrieving token. ', error);
+      console.error('An error occurred while setting up notifications. This might be an unsupported browser.', error);
     }
   }, []);
 
@@ -100,30 +100,28 @@ export default function RootLayout({
     }, 1000); 
 
     // Set up foreground message listener
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-        try {
-            const messaging = getMessaging(app);
-            const unsubscribe = onMessage(messaging, (payload) => {
-                // When a foreground message is received, simply re-fetch notifications
-                // to update the bell. This prevents a duplicate system notification.
-                fetchInitialData();
-            });
-            return () => unsubscribe(); // Unsubscribe on cleanup
-        } catch (error) {
-            console.error("Firebase Messaging not initialized:", error);
+    isSupported().then(isFCMSupported => {
+        if (isFCMSupported && typeof window !== 'undefined') {
+             try {
+                const messaging = getMessaging(app);
+                const unsubscribe = onMessage(messaging, (payload) => {
+                    fetchInitialData();
+                });
+                return () => unsubscribe();
+            } catch (error) {
+                console.error("Firebase Messaging not initialized or failed to listen:", error);
+            }
         }
-    }
+    });
 
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (user && typeof window !== 'undefined' && 'Notification' in window) {
         const localToken = localStorage.getItem(FCM_TOKEN_KEY);
-        // Check 1: User has revoked permission in browser settings.
         const permissionRevoked = Notification.permission !== 'granted' && user.fcmToken;
-        // Check 2: Token mismatch between DB and local storage.
         const tokenMismatch = !user.fcmToken || localToken !== user.fcmToken;
 
         if (permissionRevoked || tokenMismatch) {
@@ -144,14 +142,14 @@ export default function RootLayout({
       setCurrentEventIndex(nextIndex);
     } else {
       setShowEventModal(false);
-      sessionStorage.setItem('eventsSeen', 'true');
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('eventsSeen', 'true');
+      }
     }
   };
 
   const childrenWithProps = React.Children.map(children, child => {
     if (React.isValidElement(child)) {
-      // This is a bit of a hack to pass props to the page component
-      // A better solution would involve a shared context (like React Context API)
       return React.cloneElement(child as React.ReactElement<any>, { onUserRegistered });
     }
     return child;
