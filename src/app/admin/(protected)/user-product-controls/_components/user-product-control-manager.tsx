@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,20 +9,32 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Search, Trash2, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { findUserAndProductsForControl, setControlRule, deleteControlRule } from '@/app/actions';
+import { findUserAndProductsForControl, setControlRule, deleteControlRule, getActiveControlRules } from '@/app/actions';
 import type { User, Product, UserProductControl } from '@/lib/definitions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+
 
 interface UserProductControlManagerProps {
     initialRules: UserProductControl[];
+    initialHasMore: boolean;
+    totalRules: number;
 }
 
-export default function UserProductControlManager({ initialRules }: UserProductControlManagerProps) {
+export default function UserProductControlManager({ initialRules, initialHasMore, totalRules }: UserProductControlManagerProps) {
     const [rules, setRules] = useState(initialRules);
+    const [hasMore, setHasMore] = useState(initialHasMore);
+    const [page, setPage] = useState(1);
+
     const [isSearching, startSearchTransition] = useTransition();
     const [isSubmitting, startSubmitTransition] = useTransition();
     const [isDeleting, startDeleteTransition] = useTransition();
+    const [isLoadingMore, startLoadMoreTransition] = useTransition();
+
     const { toast } = useToast();
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     const [gamingId, setGamingId] = useState('');
     const [foundUser, setFoundUser] = useState<User | null>(null);
@@ -36,6 +49,33 @@ export default function UserProductControlManager({ initialRules }: UserProductC
 
     const presetReasons = ["Already purchased", "Item unavailable", "It's not for you", "You are blocked from buying this"];
     
+     useEffect(() => {
+        setRules(initialRules);
+        setHasMore(initialHasMore);
+        setPage(1);
+    }, [initialRules, initialHasMore]);
+
+    const handleRuleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const searchQuery = formData.get('search') as string;
+        const params = new URLSearchParams(searchParams);
+        params.set('search', searchQuery);
+        params.delete('page');
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
+     const handleLoadMore = async () => {
+        startLoadMoreTransition(async () => {
+            const nextPage = page + 1;
+            const search = searchParams.get('search') || '';
+            const { rules: newRules, hasMore: newHasMore } = await getActiveControlRules(nextPage, search);
+            setRules(prev => [...prev, ...newRules]);
+            setHasMore(newHasMore);
+            setPage(nextPage);
+        });
+    };
+
     const handleSearch = async () => {
         if (!gamingId) {
             toast({ variant: 'destructive', title: 'Error', description: 'Please enter a Gaming ID.' });
@@ -210,12 +250,21 @@ export default function UserProductControlManager({ initialRules }: UserProductC
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Active Control Rules</CardTitle>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                           <CardTitle>Active Control Rules</CardTitle>
+                           <Badge variant="secondary" className="text-sm">{totalRules}</Badge>
+                        </div>
+                        <form onSubmit={handleRuleSearch} className="flex items-center gap-2">
+                            <Input name="search" placeholder="Search by Gaming ID..." defaultValue={searchParams.get('search') || ''} className="w-56"/>
+                            <Button type="submit" variant="outline" size="icon"><Search className="h-4 w-4" /></Button>
+                        </form>
+                    </div>
                     <CardDescription>List of all currently active user-product restrictions and allowances.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {rules.length === 0 ? (
-                        <p className="text-muted-foreground text-center">No active rules.</p>
+                        <p className="text-muted-foreground text-center py-4">No active rules match your search.</p>
                     ) : (
                         <div className="space-y-2">
                            {rules.map(rule => (
@@ -245,6 +294,14 @@ export default function UserProductControlManager({ initialRules }: UserProductC
                         </div>
                     )}
                 </CardContent>
+                {hasMore && (
+                    <CardFooter className="justify-center">
+                        <Button onClick={handleLoadMore} disabled={isLoadingMore}>
+                            {isLoadingMore && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Load More
+                        </Button>
+                    </CardFooter>
+                )}
             </Card>
         </div>
     );

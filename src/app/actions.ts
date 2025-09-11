@@ -3,6 +3,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1806,6 +1807,8 @@ export async function deleteAiLog(logId: string): Promise<{ success: boolean; me
 }
 
 // --- User-Product Control Actions ---
+const RULES_PAGE_SIZE = 5;
+
 export async function findUserAndProductsForControl(gamingId: string): Promise<{ success: boolean, message?: string, user?: User, products?: Product[] }> {
     noStore();
     const isAdmin = await isAdminAuthenticated();
@@ -1889,18 +1892,35 @@ export async function setControlRule(formData: FormData): Promise<{ success: boo
     }
 }
 
-export async function getActiveControlRules(): Promise<UserProductControl[]> {
+export async function getActiveControlRules(page: number, search: string) {
     noStore();
     const isAdmin = await isAdminAuthenticated();
-    if (!isAdmin) return [];
+    if (!isAdmin) return { rules: [], hasMore: false, totalRules: 0 };
     
+    const db = await connectToDatabase();
+    const skip = (page - 1) * RULES_PAGE_SIZE;
+
+    let query: any = {};
+    if (search) {
+        query.gamingId = { $regex: search, $options: 'i' };
+    }
+
     try {
-        const db = await connectToDatabase();
-        const rules = await db.collection<UserProductControl>('user_product_controls').find().sort({ createdAt: -1 }).toArray();
-        return JSON.parse(JSON.stringify(rules));
+        const rulesFromDb = await db.collection<UserProductControl>('user_product_controls')
+            .find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(RULES_PAGE_SIZE)
+            .toArray();
+
+        const totalRules = await db.collection('user_product_controls').countDocuments(query);
+        const hasMore = skip + rulesFromDb.length < totalRules;
+        const rules = JSON.parse(JSON.stringify(rulesFromDb));
+
+        return { rules, hasMore, totalRules };
     } catch (error) {
         console.error("Error fetching control rules:", error);
-        return [];
+        return { rules: [], hasMore: false, totalRules: 0 };
     }
 }
 
@@ -1935,6 +1955,7 @@ export async function getUserProductControls(gamingId: string): Promise<UserProd
         return [];
     }
 }
+
 
 
 
