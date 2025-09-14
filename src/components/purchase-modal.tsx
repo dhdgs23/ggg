@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Product, User } from '@/lib/definitions';
 import { Loader2, X, ShieldCheck, Smartphone, Globe, Coins } from 'lucide-react';
 import Image from 'next/image';
-import { createRedeemCodeOrder, registerGamingId as registerAction, createRazorpayOrder, verifyRazorpayPayment } from '@/app/actions';
+import { createRedeemCodeOrder, registerGamingId as registerAction, createRazorpayOrder } from '@/app/actions';
 import {
   Select,
   SelectContent,
@@ -32,13 +32,6 @@ interface PurchaseModalProps {
   user: User | null;
   onClose: () => void;
 }
-
-declare global {
-    interface Window {
-        Razorpay: any;
-    }
-}
-
 
 type ModalStep = 'register' | 'details' | 'processing';
 
@@ -96,76 +89,15 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
         return;
     }
 
-    const razorpayOrderResult = await createRazorpayOrder(finalPrice, user.gamingId);
+    const result = await createRazorpayOrder(finalPrice, user.gamingId, product._id);
 
-    if (!razorpayOrderResult.success || !razorpayOrderResult.order) {
-        toast({ variant: 'destructive', title: 'Payment Error', description: razorpayOrderResult.error || 'Could not create payment order.' });
+    if (result.success && result.paymentLink) {
+        // Redirect user to the payment link
+        window.location.href = result.paymentLink;
+    } else {
+        toast({ variant: 'destructive', title: 'Payment Error', description: result.error || 'Could not create payment link.' });
         setIsLoading(false);
-        return;
     }
-
-    const { order: razorpayOrder } = razorpayOrderResult;
-    
-    const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: razorpayOrder.amount,
-        currency: razorpayOrder.currency,
-        name: "Garena Store",
-        description: `Order for ${product.name}`,
-        image: "https://freefire-max-garena.vercel.app/img/garena.png",
-        order_id: razorpayOrder.id,
-        handler: async function (response: any) {
-            const formData = new FormData();
-            formData.append('razorpay_payment_id', response.razorpay_payment_id);
-            formData.append('razorpay_order_id', response.razorpay_order_id);
-            formData.append('razorpay_signature', response.razorpay_signature);
-            formData.append('productId', product._id);
-            formData.append('gamingId', user.gamingId);
-
-            setStep('processing');
-            const verificationResult = await verifyRazorpayPayment(formData);
-
-            if (verificationResult.success) {
-                toast({ title: 'Success', description: verificationResult.message });
-                 if (!product.isCoinProduct) {
-                    // For normal products, show the processing message
-                    // The step is already 'processing'
-                 } else {
-                    // For coin products, close the modal
-                    handleClose();
-                 }
-            } else {
-                toast({ variant: 'destructive', title: 'Payment Failed', description: verificationResult.message });
-                handleClose();
-            }
-        },
-        prefill: {
-            name: user.gamingId,
-            email: "support@garenagears.com",
-            contact: ""
-        },
-        theme: {
-            color: "#F97316"
-        },
-        modal: {
-            ondismiss: function() {
-                setIsLoading(false); // Re-enable button if user closes Razorpay popup
-            }
-        }
-    };
-
-    const rzp = new window.Razorpay(options);
-    rzp.on('payment.failed', function (response: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Payment Failed',
-            description: response.error.description || 'Something went wrong.'
-        });
-        setIsLoading(false);
-    });
-
-    rzp.open();
-    handleClose(); // Close our modal once Razorpay's is open
   };
 
 
@@ -304,7 +236,7 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
                 <h2 className="text-2xl font-headline">Order Under Processing</h2>
                 <p className="text-muted-foreground">Your order has been received and is now being processed. This usually takes just a few moments.</p>
                 <p>You can track the status of your order on the "Order" page.</p>
-                <Button onClick={handleClose}>Go to Orders Page</Button>
+                <Button asChild onClick={handleClose}><Link href="/order">Go to Orders Page</Link></Button>
             </div>
         )
       default:
@@ -313,12 +245,7 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
   };
 
   return (
-    <>
-    <Script
-        id="razorpay-checkout-js"
-        src="https://checkout.razorpay.com/v1/checkout.js"
-    />
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <button onClick={handleClose} className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <X className="h-4 w-4" />
@@ -327,10 +254,5 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
         {renderContent()}
       </DialogContent>
     </Dialog>
-    </>
   );
 }
-
-    
-
-    

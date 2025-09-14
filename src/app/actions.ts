@@ -4,6 +4,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -629,7 +630,7 @@ export async function createRedeemCodeOrder(
 }
 
 // --- Razorpay Actions ---
-export async function createRazorpayOrder(amount: number, gamingId: string) {
+export async function createRazorpayOrder(amount: number, gamingId: string, productId: string) {
     noStore();
     const razorpay = new Razorpay({
         key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
@@ -639,119 +640,24 @@ export async function createRazorpayOrder(amount: number, gamingId: string) {
     const options = {
         amount: amount * 100, // amount in the smallest currency unit
         currency: "INR",
-        receipt: `receipt_order_${new Date().getTime()}`,
+        description: `Purchase for Gaming ID: ${gamingId}`,
         notes: {
             gamingId: gamingId,
-        }
-    };
-    try {
-        const order = await razorpay.orders.create(options);
-        return { success: true, order };
-    } catch (error) {
-        console.error('Error creating Razorpay order:', error);
-        return { success: false, error: 'Failed to create payment order.' };
-    }
-}
-
-const verifyPaymentSchema = z.object({
-    razorpay_order_id: z.string(),
-    razorpay_payment_id: z.string(),
-    razorpay_signature: z.string(),
-    productId: z.string(),
-    gamingId: z.string(),
-});
-
-export async function verifyRazorpayPayment(formData: FormData) {
-    const validatedData = verifyPaymentSchema.safeParse(Object.fromEntries(formData));
-
-    if (!validatedData.success) {
-        return { success: false, message: 'Invalid payment data.' };
-    }
-
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, productId, gamingId } = validatedData.data;
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-
-    const expectedSignature = createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
-        .update(body.toString())
-        .digest('hex');
-
-    if (expectedSignature !== razorpay_signature) {
-        return { success: false, message: 'Invalid payment signature.' };
-    }
-
-    // Payment is verified, now create the order in the database
-    const db = await connectToDatabase();
-    const product = await db.collection<Product>('products').findOne({ _id: new ObjectId(productId) });
-    const user = await db.collection<User>('users').findOne({ gamingId });
-
-    if (!product || !user) {
-        return { success: false, message: 'Product or user not found.' };
-    }
-
-    const coinsUsed = product.isCoinProduct ? 0 : Math.min(user.coins, product.coinsApplicable || 0);
-    const finalPrice = product.isCoinProduct ? product.purchasePrice || product.price : product.price - coinsUsed;
-    const orderStatus = product.isCoinProduct ? 'Completed' : 'Processing';
-
-    const newOrder: Omit<Order, '_id'> = {
-        userId: user._id.toString(),
-        gamingId,
-        productId: product._id.toString(),
-        productName: product.name,
-        productPrice: product.price,
-        productImageUrl: product.imageUrl,
-        paymentMethod: 'UPI',
-        status: orderStatus,
-        utr: razorpay_payment_id, // Storing payment ID in UTR field for consistency
-        referralCode: user.referredByCode,
-        coinsUsed,
-        finalPrice,
-        isCoinProduct: product.isCoinProduct,
-        createdAt: new Date(),
-        coinsAtTimeOfPurchase: user.coins, // Record coins at time of purchase
+            productId: productId,
+        },
+        callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/order`,
+        callback_method: 'get' as const
     };
 
     try {
-        const session = db.client.startSession();
-        await session.withTransaction(async () => {
-            await db.collection<Order>('orders').insertOne(newOrder as Order, { session });
-
-            if (product.isCoinProduct) {
-                // Instantly reward coins for coin product purchase
-                await db.collection<User>('users').updateOne(
-                    { _id: user._id },
-                    { $inc: { coins: product.quantity } },
-                    { session }
-                );
-            } else if (coinsUsed > 0) {
-                // Deduct coins for normal product purchase
-                await db.collection<User>('users').updateOne(
-                    { _id: user._id },
-                    { $inc: { coins: -coinsUsed } },
-                    { session }
-                );
-            }
-
-            // Handle referral reward if the order is completed instantly
-            if (orderStatus === 'Completed' && user.referredByCode) {
-                 const rewardAmount = finalPrice * 0.50;
-                 await db.collection<LegacyUser>('legacy_users').updateOne(
-                    { referralCode: user.referredByCode },
-                    { $inc: { walletBalance: rewardAmount } },
-                    { session }
-                );
-            }
-        });
-        await session.endSession();
-        
-        revalidatePath('/');
-        revalidatePath('/order');
-        revalidatePath('/admin/success');
-        return { success: true, message: 'Payment successful, order created.' };
+        const paymentLink = await razorpay.paymentLink.create(options);
+        return { success: true, paymentLink: paymentLink.short_url };
     } catch (error) {
-        console.error('Error creating order after payment verification:', error);
-        return { success: false, message: 'Failed to create order after payment.' };
+        console.error('Error creating Razorpay payment link:', error);
+        return { success: false, error: 'Failed to create payment link.' };
     }
 }
+
 
 
 
@@ -1955,6 +1861,7 @@ export async function getUserProductControls(gamingId: string): Promise<UserProd
         return [];
     }
 }
+
 
 
 
