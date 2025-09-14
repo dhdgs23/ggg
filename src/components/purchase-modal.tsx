@@ -11,10 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, User } from '@/lib/definitions';
-import { Loader2, X, ShieldCheck, Smartphone, Globe, Coins } from 'lucide-react';
+import { Loader2, X, ShieldCheck, Smartphone, Globe, Coins, QrCode } from 'lucide-react';
 import Image from 'next/image';
 import { createRedeemCodeOrder, registerGamingId as registerAction, createRazorpayOrder } from '@/app/actions';
-import QRCode from "react-qr-code";
 import {
   Select,
   SelectContent,
@@ -44,7 +43,7 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
   const [gamingId, setGamingId] = useState(initialUser?.gamingId || '');
   const [redeemCode, setRedeemCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [paymentLink, setPaymentLink] = useState('');
+  const [paymentDetails, setPaymentDetails] = useState<{qrImageUrl: string; paymentLinkUrl: string} | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -94,11 +93,11 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
 
     const result = await createRazorpayOrder(finalPrice, user.gamingId, product._id);
 
-    if (result.success && result.paymentLink) {
-        setPaymentLink(result.paymentLink);
+    if (result.success && result.qrImageUrl && result.paymentLinkUrl) {
+        setPaymentDetails({ qrImageUrl: result.qrImageUrl, paymentLinkUrl: result.paymentLinkUrl });
         setStep('qrPayment');
     } else {
-        toast({ variant: 'destructive', title: 'Payment Error', description: result.error || 'Could not create payment link.' });
+        toast({ variant: 'destructive', title: 'Payment Error', description: result.error || 'Could not create payment details.' });
     }
     setIsLoading(false);
   };
@@ -243,6 +242,7 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
             </div>
         );
     case 'qrPayment':
+        if (!paymentDetails) return null;
         return (
             <>
                 <DialogHeader>
@@ -255,12 +255,12 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
                 <div className="flex flex-col items-center justify-center space-y-4 py-4">
                     <p className="text-3xl font-bold text-primary font-sans">Pay: ₹{finalPrice}</p>
                     <div className="p-4 bg-white rounded-lg border">
-                        <QRCode value={paymentLink} size={200} />
+                         <Image src={paymentDetails.qrImageUrl} alt="UPI QR Code" width={200} height={200} />
                     </div>
                     <p className="text-sm text-muted-foreground">Waiting for payment confirmation...</p>
                     <div className="w-full border-t pt-4">
                          <Button asChild className="w-full">
-                            <a href={paymentLink} target="_blank" rel="noopener noreferrer">
+                            <a href={paymentDetails.paymentLinkUrl} target="_blank" rel="noopener noreferrer">
                                 <Smartphone className="mr-2" /> Pay with UPI app
                             </a>
                         </Button>

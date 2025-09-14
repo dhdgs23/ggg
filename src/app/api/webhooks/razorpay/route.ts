@@ -39,13 +39,12 @@ export async function POST(req: NextRequest) {
 
   const payload = JSON.parse(body);
 
-  // 2. Handle the correct payment event `payment_link.paid`
-  if (payload.event === 'payment_link.paid') {
-    const paymentLinkEntity = payload.payload.payment_link.entity;
+  // 2. Handle the payment.captured event
+  if (payload.event === 'payment.captured') {
     const paymentEntity = payload.payload.payment.entity;
 
-    const { id: razorpayPaymentId } = paymentEntity;
-    const { gamingId, productId } = paymentLinkEntity.notes;
+    const { id: razorpayPaymentId, notes } = paymentEntity;
+    const { gamingId, productId } = notes;
 
     if (!productId || !gamingId) {
       console.error('Webhook payload missing productId or gamingId in notes');

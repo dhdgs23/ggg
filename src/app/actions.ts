@@ -7,6 +7,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -639,25 +640,38 @@ export async function createRazorpayOrder(amount: number, gamingId: string, prod
         key_secret: process.env.RAZORPAY_KEY_SECRET || '',
     });
 
-    const options = {
-        amount: amount * 100, // amount in the smallest currency unit
-        currency: "INR",
-        upi_link: true, // This creates a UPI-only payment link
-        description: `Purchase for Gaming ID: ${gamingId}`,
-        notes: {
-            gamingId: gamingId,
-            productId: productId,
-        },
-        callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/order`,
-        callback_method: 'get' as const
+    const notes = {
+        gamingId: gamingId,
+        productId: productId,
     };
 
     try {
-        const paymentLink = await razorpay.paymentLink.create(options);
-        return { success: true, paymentLink: paymentLink.short_url };
+        const qrPromise = razorpay.qrCode.create({
+            type: "upi_qr",
+            name: `Garena: ${productId}`,
+            usage: "single_use",
+            fixed_amount: true,
+            payment_amount: amount * 100,
+            description: `Garena Store Purchase`,
+            notes: notes
+        });
+
+        const linkPromise = razorpay.paymentLink.create({
+            amount: amount * 100,
+            currency: "INR",
+            upi_link: true,
+            description: `Purchase for Gaming ID: ${gamingId}`,
+            notes: notes,
+            callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/order`,
+            callback_method: 'get' as const
+        });
+
+        const [qrCode, paymentLink] = await Promise.all([qrPromise, linkPromise]);
+        
+        return { success: true, qrImageUrl: qrCode.image_url, paymentLinkUrl: paymentLink.short_url };
     } catch (error: any) {
-        console.error('Error creating Razorpay UPI payment link:', error.error?.description || error);
-        return { success: false, error: 'Failed to create payment link. ' + (error.error?.description || '') };
+        console.error('Error creating Razorpay QR or Link:', error.error?.description || error);
+        return { success: false, error: 'Failed to create payment details. ' + (error.error?.description || '') };
     }
 }
 
@@ -1864,6 +1878,7 @@ export async function getUserProductControls(gamingId: string): Promise<UserProd
         return [];
     }
 }
+
 
 
 
