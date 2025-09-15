@@ -11,6 +11,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1778,6 +1779,7 @@ export async function setUserRedeemDisabled(gamingId: string, disabled: boolean)
 
         revalidatePath('/'); // To update user data on client
         revalidatePath('/admin/user-product-controls');
+        revalidatePath('/admin/disabled-redeem-users');
         return { success: true, message: `Redeem code payments ${disabled ? 'disabled' : 'enabled'} for ${gamingId}.` };
     } catch (error) {
         console.error("Error setting redeem code disabled status:", error);
@@ -1912,6 +1914,27 @@ export async function getUserProductControls(gamingId: string): Promise<UserProd
         return [];
     }
 }
+
+export async function getDisabledRedeemUsers(search: string) {
+    noStore();
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) return [];
+
+    let query: any = { isRedeemDisabled: true };
+    if (search) {
+        query.gamingId = { $regex: search, $options: 'i' };
+    }
+
+    try {
+        const db = await connectToDatabase();
+        const users = await db.collection<User>('users').find(query).sort({ gamingId: 1 }).toArray();
+        return JSON.parse(JSON.stringify(users));
+    } catch (error) {
+        console.error("Error fetching disabled redeem users:", error);
+        return [];
+    }
+}
+
 
 
 

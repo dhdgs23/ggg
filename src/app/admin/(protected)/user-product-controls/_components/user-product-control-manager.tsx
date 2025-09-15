@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Search, Trash2, Lock, FileCode } from 'lucide-react';
+import { Loader2, Search, Trash2, Lock, FileCode, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { findUserAndProductsForControl, setControlRule, deleteControlRule, getActiveControlRules, setUserRedeemDisabled } from '@/app/actions';
 import type { User, Product, UserProductControl } from '@/lib/definitions';
@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import Link from 'next/link';
 
 
 interface UserProductControlManagerProps {
@@ -291,10 +292,18 @@ export default function UserProductControlManager({ initialRules, initialHasMore
                            <CardTitle>Active Control Rules</CardTitle>
                            <Badge variant="secondary" className="text-sm">{totalRules}</Badge>
                         </div>
-                        <form onSubmit={handleRuleSearch} className="flex items-center gap-2">
-                            <Input name="search" placeholder="Search by Gaming ID..." defaultValue={searchParams.get('search') || ''} className="w-56"/>
-                            <Button type="submit" variant="outline" size="icon"><Search className="h-4 w-4" /></Button>
-                        </form>
+                        <div className="flex items-center gap-2">
+                             <Button asChild variant="outline">
+                                <Link href="/admin/disabled-redeem-users">
+                                    <List className="mr-2 h-4 w-4" />
+                                    View Disabled Redeem Users
+                                </Link>
+                            </Button>
+                            <form onSubmit={handleRuleSearch} className="flex items-center gap-2">
+                                <Input name="search" placeholder="Search by Gaming ID..." defaultValue={searchParams.get('search') || ''} className="w-56"/>
+                                <Button type="submit" variant="outline" size="icon"><Search className="h-4 w-4" /></Button>
+                            </form>
+                        </div>
                     </div>
                     <CardDescription>List of all currently active user-product restrictions and allowances.</CardDescription>
                 </CardHeader>
