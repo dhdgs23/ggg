@@ -16,6 +16,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -24,7 +25,7 @@ import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { type User, type Order, type Product, type Withdrawal, type LegacyUser, type Notification, type Event, type AiLog, type UserProductControl } from '@/lib/definitions';
+import { type User, type Order, type Product, type Withdrawal, type LegacyUser, type Notification, type Event, type AiLog, type UserProductControl, type VisualIdPromotionLog } from '@/lib/definitions';
 import { randomBytes, createHmac } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -330,7 +331,8 @@ export async function logoutUser(): Promise<{ success: boolean, message: string 
                 const newGamingId = user.visualGamingId!;
 
                 // 1. Create a new user with the visual ID, inheriting properties
-                const newUser: Omit<User, '_id'> = {
+                // but removing the visualGamingId and visualIdSetAt fields
+                const newUser: Omit<User, '_id' | 'visualGamingId' | 'visualIdSetAt'> = {
                     gamingId: newGamingId,
                     coins: user.coins,
                     createdAt: user.createdAt,
@@ -352,7 +354,15 @@ export async function logoutUser(): Promise<{ success: boolean, message: string 
                 await db.collection<AiLog>('ai_logs').updateMany({ gamingId: oldGamingId }, { $set: { gamingId: newGamingId } }, { session });
                 await db.collection<UserProductControl>('user_product_controls').updateMany({ gamingId: oldGamingId }, { $set: { gamingId: newGamingId } }, { session });
 
-                // 3. Delete the old user document
+                // 3. Log the promotion event
+                const promotionLog: Omit<VisualIdPromotionLog, '_id'> = {
+                    oldGamingId,
+                    newGamingId,
+                    promotionDate: new Date(),
+                };
+                await db.collection('visual_id_promotions').insertOne(promotionLog as VisualIdPromotionLog, { session });
+                
+                // 4. Delete the old user document
                 await db.collection<User>('users').deleteOne({ _id: user._id }, { session });
 
                 resultMessage = `Successfully migrated user ${oldGamingId} to ${newGamingId}.`;
@@ -738,7 +748,7 @@ export async function createRazorpayOrder(amount: number, gamingId: string, prod
             usage: "single_use",
             fixed_amount: true,
             payment_amount: amount * 100,
-            description: `Garena Store Purchase`,
+            description: `Purchase for: ${product.name}`,
             notes: notes
         });
 
@@ -2026,6 +2036,7 @@ export async function getDisabledRedeemUsers(search: string, page: number) {
         return { users: [], hasMore: false, totalUsers: 0 };
     }
 }
+
 
 
 

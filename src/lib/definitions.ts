@@ -131,3 +131,10 @@ export interface UserProductControl {
     limitCount?: number; // For 'limitPurchase' type
     createdAt: Date;
 }
+
+export interface VisualIdPromotionLog {
+    _id: ObjectId;
+    oldGamingId: string;
+    newGamingId: string;
+    promotionDate: Date;
+}

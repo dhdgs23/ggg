@@ -47,28 +47,6 @@ export default function Header({ user, notifications }: HeaderProps) {
     }
   };
 
-  const logoutTrigger = user?.visualGamingId ? (
-     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="ghost" className="hidden md:flex">Logout</Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action has permanent consequences. Your current Gaming ID ({user.gamingId}) will be deleted, and your Visual ID ({user.visualGamingId}) will become your new, real Gaming ID. All of your coins and order history will be transferred. This cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleLogout}>Confirm & Logout</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  ) : (
-    <Button variant="ghost" onClick={handleLogout} className="hidden md:flex">Logout</Button>
-  );
-
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container px-4 md:px-6 flex h-16 items-center justify-between">
@@ -80,7 +58,9 @@ export default function Header({ user, notifications }: HeaderProps) {
         <div className="flex items-center gap-4">
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
              <NavigationLinks notifications={notifications} user={user} />
-             {user && logoutTrigger}
+             {user && (
+              <Button variant="ghost" onClick={handleLogout}>Logout</Button>
+             )}
           </nav>
 
           <div className="flex items-center md:hidden">
