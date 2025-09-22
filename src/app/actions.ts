@@ -1,25 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -327,15 +306,17 @@ export async function logoutUser(): Promise<{ success: boolean, message: string 
     if (user.visualGamingId && user.visualGamingId.trim() !== '') {
         try {
             await promoteVisualId(user);
+            // On successful promotion, set the cookie to the *new* ID (the old visual ID)
+            cookies().set('previous_gaming_id', user.visualGamingId, { maxAge: 365 * 24 * 60 * 60, httpOnly: true });
         } catch (error: any) {
             console.error('Visual ID swap transaction failed:', error);
             return { success: false, message: error.message || 'An error occurred during the ID swap. Please contact support.' };
         }
+    } else {
+        // --- Standard Logout or Post-Promotion Logout ---
+        // Store the ID being logged out for history tracking on the next login
+        cookies().set('previous_gaming_id', user.gamingId, { maxAge: 365 * 24 * 60 * 60, httpOnly: true });
     }
-
-    // --- Standard Logout or Post-Promotion Logout ---
-    // Store the ID being logged out for history tracking on the next login
-    cookies().set('previous_gaming_id', user.gamingId, { maxAge: 365 * 24 * 60 * 60, httpOnly: true });
 
     cookies().set('gaming_id', '', { expires: new Date(0) });
     return { success: true, message: 'Logged out successfully.' };
@@ -2045,3 +2026,5 @@ export async function getLoginHistory(): Promise<{ gamingId: string; timestamp: 
   const sortedHistory = user.loginHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   return sortedHistory;
 }
+
+    
