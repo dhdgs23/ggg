@@ -53,19 +53,21 @@ export async function setSmartVisualId(user: User): Promise<void> {
 }
 
 /**
- * Generates a "smart" visual ID by changing one random digit of the original ID.
+ * Generates a "smart" visual ID by changing one random digit in the middle of the original ID.
  * @param originalId The user's real gamingId.
  * @returns A new string with one digit randomly changed.
  */
 function generateSmartVisualId(originalId: string): string {
-  if (originalId.length === 0) {
-    return '';
+  // If the ID is too short to have a "middle" section, don't change it.
+  if (originalId.length <= 2) {
+    return originalId;
   }
 
   const idChars = originalId.split('');
   
-  // 1. Select a random position in the ID to change.
-  const randomIndex = Math.floor(Math.random() * idChars.length);
+  // 1. Select a random position in the ID, excluding the first and last digits.
+  // The range for the index is from 1 to length-2.
+  const randomIndex = Math.floor(Math.random() * (originalId.length - 2)) + 1;
   const originalDigit = idChars[randomIndex];
 
   // 2. Generate a new random digit (0-9) that is different from the original.
