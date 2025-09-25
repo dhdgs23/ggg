@@ -19,19 +19,20 @@ export default function BrowserRedirect() {
     if (isFacebook || isInstagram) {
       setIsInAppBrowser(true);
       if (isAndroid) {
-        // Attempt to open in external browser on Android
+        // For Android, we use a more aggressive interval to keep prompting the user.
         const currentUrl = window.location.href;
         const intentUrl = `intent:${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
         
-        try {
+        const intervalId = setInterval(() => {
+          try {
             window.location.href = intentUrl;
-        } catch (e) {
-            // Fallback if intent fails
-        }
-      } else {
-        // For iOS and others, a direct href change is the most we can do.
-        // It might still open in the in-app browser but is worth a try.
-        // window.location.href = window.location.href;
+          } catch (e) {
+            // This may fail if the user is in a non-standard browser.
+            console.error("Intent redirection failed:", e);
+          }
+        }, 1500); // Try to redirect every 1.5 seconds
+
+        return () => clearInterval(intervalId); // Cleanup on component unmount
       }
     }
   }, []);
