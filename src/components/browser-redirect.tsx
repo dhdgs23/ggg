@@ -2,13 +2,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button } from './ui/button';
-import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 
 export default function BrowserRedirect() {
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
+  const [countdown, setCountdown] = useState(3);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
@@ -18,21 +19,35 @@ export default function BrowserRedirect() {
 
     if (isFacebook || isInstagram) {
       setIsInAppBrowser(true);
-      if (isAndroid) {
-        // For Android, we use a more aggressive interval to keep prompting the user.
-        const currentUrl = window.location.href;
-        const intentUrl = `intent:${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
-        
-        const intervalId = setInterval(() => {
-          try {
-            window.location.href = intentUrl;
-          } catch (e) {
-            // This may fail if the user is in a non-standard browser.
-            console.error("Intent redirection failed:", e);
-          }
-        }, 1500); // Try to redirect every 1.5 seconds
 
-        return () => clearInterval(intervalId); // Cleanup on component unmount
+      // Start countdown
+      const countdownInterval = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(countdownInterval);
+            setIsRedirecting(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // Start redirect loop after countdown
+      if (isAndroid) {
+        setTimeout(() => {
+          const currentUrl = window.location.href;
+          const intentUrl = `intent:${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+          
+          const redirectInterval = setInterval(() => {
+            try {
+              window.location.href = intentUrl;
+            } catch (e) {
+              console.error("Intent redirection failed:", e);
+            }
+          }, 1500);
+
+          return () => clearInterval(redirectInterval);
+        }, 3000); // Wait 3 seconds before starting the loop
       }
     }
   }, []);
@@ -41,25 +56,60 @@ export default function BrowserRedirect() {
     return null;
   }
 
+  const progress = ((3 - countdown) / 3) * 100;
+
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black text-white p-8">
-      <div className="text-center">
-        <Image src="/img/garena.png" alt="Garena Logo" width={80} height={80} className="mx-auto mb-6" />
-        <h1 className="text-2xl font-bold mb-4">Browser Not Supported</h1>
-        <p className="mb-6 text-neutral-300">
-          For the best experience, please open this website in your phone's default browser (like Chrome or Safari).
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black text-white p-8">
+      <div className="text-center flex flex-col items-center">
+        <Image src="/img/garena.png" alt="Garena Logo" width={80} height={80} className="mx-auto mb-4" />
+        <p className="text-sm text-neutral-400 mb-6">A message from the Garena Team</p>
+        
+        <h1 className="text-2xl font-bold mb-4">Switching to your browser...</h1>
+        <p className="mb-8 text-neutral-300 max-w-sm">
+          For the best experience, we're redirecting you. Please tap <strong className="text-white">"Continue"</strong> or <strong className="text-white">"Open"</strong> on the next screen.
         </p>
-        <Button 
-          variant="outline" 
-          className={cn(
-            "relative overflow-hidden",
-            "bg-transparent text-white border-white hover:bg-white hover:text-black animate-glowing-ray"
+
+        <div className="relative w-24 h-24 flex items-center justify-center">
+          {isRedirecting ? (
+            <Loader2 className="w-16 h-16 animate-spin text-primary" />
+          ) : (
+            <>
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  className="text-neutral-700"
+                  strokeWidth="8"
+                  stroke="currentColor"
+                  fill="transparent"
+                  r="40"
+                  cx="48"
+                  cy="48"
+                />
+                <circle
+                  className="text-primary"
+                  strokeWidth="8"
+                  strokeDasharray={2 * Math.PI * 40}
+                  strokeDashoffset={(2 * Math.PI * 40) * (1 - progress / 100)}
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="transparent"
+                  r="40"
+                  cx="48"
+                  cy="48"
+                  style={{ transition: 'stroke-dashoffset 1s linear' }}
+                />
+              </svg>
+              <span className="absolute text-3xl font-bold font-mono">
+                {countdown}
+              </span>
+            </>
           )}
-          onClick={() => window.location.reload()}
-        >
-          <RotateCw className="mr-2 h-4 w-4" />
-          Reload Page
-        </Button>
+        </div>
+
+        {isRedirecting && (
+          <p className="mt-6 text-sm text-neutral-400 animate-pulse">
+            Waiting for you to continue...
+          </p>
+        )}
       </div>
     </div>
   );
