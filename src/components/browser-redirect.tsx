@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react';
 
 export default function BrowserRedirect() {
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(5);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function BrowserRedirect() {
           }, 1500);
 
           return () => clearInterval(redirectInterval);
-        }, 3000); // Wait 3 seconds before starting the loop
+        }, 5000); // Wait 5 seconds before starting the loop
       }
     }
   }, []);
@@ -56,7 +56,7 @@ export default function BrowserRedirect() {
     return null;
   }
 
-  const progress = ((3 - countdown) / 3) * 100;
+  const progress = ((5 - countdown) / 5) * 100;
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black text-white p-8">
