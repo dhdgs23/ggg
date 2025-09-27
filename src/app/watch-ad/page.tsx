@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -20,14 +21,12 @@ export default function WatchAdPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   
-  const [progress, setProgress] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [isRewardGranted, setIsRewardGranted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   
   const [shouldGrantReward, setShouldGrantReward] = useState(false);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const router = useRouter();
@@ -54,12 +53,6 @@ export default function WatchAdPage() {
   }, []);
 
   useEffect(() => {
-    if (shouldRedirect) {
-      router.push('/');
-    }
-  }, [shouldRedirect, router]);
-
-  useEffect(() => {
       if (videoRef.current && ad) {
           videoRef.current.play().catch(error => {
               console.warn("Autoplay with sound failed. Muting video.", error);
@@ -75,32 +68,32 @@ export default function WatchAdPage() {
   useEffect(() => {
     if (!ad || isLoading) return;
     
+    // Timer for UI updates and reward granting
     const rewardTime = ad.rewardTime || ad.totalDuration;
-
-    const timer = setInterval(() => {
+    const interval = setInterval(() => {
       setTimeElapsed(prev => {
         const newTime = prev + 1;
-        
         if (newTime >= 3) {
           setShowCta(true);
         }
-
         if (newTime >= rewardTime && !hasGrantedReward.current) {
           hasGrantedReward.current = true;
           setShouldGrantReward(true);
         }
-        
-        if (newTime >= ad.totalDuration) {
-          clearInterval(timer);
-          setShouldRedirect(true);
-        }
-        
         return newTime;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [ad, isLoading]);
+    // Reliable timer for redirecting
+    const redirectTimer = setTimeout(() => {
+      router.push('/');
+    }, ad.totalDuration * 1000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(redirectTimer);
+    };
+  }, [ad, isLoading, router]);
   
   useEffect(() => {
     if (shouldGrantReward) {
@@ -166,13 +159,14 @@ export default function WatchAdPage() {
 
     return (
       <div className="relative w-full h-full">
-         <div className="absolute top-0 left-0 right-0 p-4 z-10 flex items-center gap-4">
-            <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+         <div 
+            className="absolute top-0 left-0 right-0 p-4 z-10 flex items-center gap-4 bg-gradient-to-b from-black/50 to-transparent"
+         >
+            <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
                 <div
-                    className="h-full bg-white"
+                    className="h-full bg-white origin-left"
                     style={{
-                        width: `${(timeElapsed / ad.totalDuration) * 100}%`,
-                        transition: 'width 1s linear'
+                        animation: `progress-smooth ${ad.totalDuration}s linear forwards`,
                     }}
                 />
             </div>
@@ -191,15 +185,16 @@ export default function WatchAdPage() {
         
         <div 
           className="w-full h-full cursor-pointer"
-          onClick={handleCtaClick}
+          onClick={ad.hideCtaButton ? handleCtaClick : undefined}
         >
             <video
-            ref={videoRef}
-            src={ad.videoUrl}
-            autoPlay
-            playsInline
-            muted={isMuted}
-            className="w-full h-full object-cover"
+              ref={videoRef}
+              src={ad.videoUrl}
+              autoPlay
+              playsInline
+              muted={isMuted}
+              className="w-full h-full object-cover"
+              loop // Loop the video if it's shorter than the total duration
             />
         </div>
         
