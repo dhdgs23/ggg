@@ -1,3 +1,4 @@
+
 'use server';
 
 import { isAdminAuthenticated } from '@/app/actions';
@@ -50,7 +51,7 @@ export async function getAdSettings(): Promise<CustomAd | null> {
     }
 }
 
-export async function saveAdSettings(formData: FormData): Promise<{ success: boolean, message: string }> {
+export async function saveAdSettings(prevState: { success: boolean, message: string }, formData: FormData): Promise<{ success: boolean, message: string }> {
     const isAdmin = await isAdminAuthenticated();
     if (!isAdmin) {
         return { success: false, message: 'Unauthorized' };
