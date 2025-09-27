@@ -40,8 +40,10 @@ export default function RootLayout({
   const isAdPage = pathname === '/watch-ad';
 
 
-  const fetchInitialData = useCallback(async () => {
-    setIsLoading(true);
+  const fetchInitialData = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) {
+      setIsLoading(true);
+    }
     const userData = await getUserData();
     setUser(userData);
     
@@ -64,7 +66,9 @@ export default function RootLayout({
       setStandardNotifications(standard);
       setPopupNotifications(popups);
     }
-    setIsLoading(false);
+    if (isInitialLoad) {
+      setIsLoading(false);
+    }
   }, []);
 
   const handleNotificationRefresh = useCallback(async () => {
@@ -77,7 +81,7 @@ export default function RootLayout({
 
   const onUserRegistered = useCallback(async () => {
     // Re-fetch all data when a user registers
-    await fetchInitialData();
+    await fetchInitialData(true);
   }, [fetchInitialData]);
 
 
@@ -110,7 +114,7 @@ export default function RootLayout({
   }, []);
 
   useEffect(() => {
-    fetchInitialData();
+    fetchInitialData(true);
 
     // Set up foreground message listener
     isSupported().then(isFCMSupported => {
@@ -118,7 +122,7 @@ export default function RootLayout({
              try {
                 const messaging = getMessaging(app);
                 const unsubscribe = onMessage(messaging, (payload) => {
-                    fetchInitialData();
+                    fetchInitialData(false);
                 });
                 return () => unsubscribe();
             } catch (error) {
