@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -26,6 +27,10 @@ export default function WatchAdPage() {
   const [isRewardGranted, setIsRewardGranted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   
+  // States to fix rendering errors
+  const [shouldGrantReward, setShouldGrantReward] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const router = useRouter();
   const { toast } = useToast();
@@ -86,21 +91,13 @@ export default function WatchAdPage() {
         // Grant reward
         if (newTime >= ad.rewardTime && !hasGrantedReward.current) {
           hasGrantedReward.current = true;
-          rewardAdCoins().then(result => {
-            if (result.success) {
-              toast({
-                title: 'Success!',
-                description: result.message || "You've earned 5 coins!",
-              });
-            }
-          });
-          setIsRewardGranted(true);
+          setShouldGrantReward(true); // Signal that the reward should be granted
         }
         
         // End of ad
         if (newTime >= ad.totalDuration) {
           clearInterval(timer);
-          router.push('/');
+          setShouldRedirect(true); // Signal that we should redirect
         }
         
         return newTime;
@@ -108,7 +105,29 @@ export default function WatchAdPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [ad, isLoading, router, toast]);
+  }, [ad, isLoading]);
+  
+  // Effect to safely grant the reward
+  useEffect(() => {
+    if (shouldGrantReward) {
+      rewardAdCoins().then(result => {
+        if (result.success) {
+          toast({
+            title: 'Success!',
+            description: result.message || "You've earned 5 coins!",
+          });
+        }
+      });
+      setIsRewardGranted(true);
+    }
+  }, [shouldGrantReward, toast]);
+
+  // Effect to safely redirect
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.push('/');
+    }
+  }, [shouldRedirect, router]);
 
   const handleCtaClick = useCallback(() => {
     if (ad) {
