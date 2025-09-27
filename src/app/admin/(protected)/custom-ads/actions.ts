@@ -7,8 +7,10 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { unstable_noStore as noStore } from 'next/cache';
+import { ObjectId } from 'mongodb';
 
 const adSchema = z.object({
+    adId: z.string().optional(),
     videoUrl: z.string().url('Must be a valid URL.'),
     ctaText: z.string().min(1, 'Button text is required.'),
     ctaLink: z.string().url('Must be a valid URL.'),
@@ -27,37 +29,39 @@ const adSchema = z.object({
     path: ['rewardTime'],
 });
 
-export async function getActiveAd(): Promise<CustomAd | null> {
+export async function getRandomAd(): Promise<CustomAd | null> {
     noStore();
     try {
         const db = await connectToDatabase();
-        const ad = await db.collection<CustomAd>('custom_ads').findOne({ isActive: true });
-        if (!ad) return null;
-        return JSON.parse(JSON.stringify(ad));
+        const ads = await db.collection<CustomAd>('custom_ads').aggregate([{ $sample: { size: 1 } }]).toArray();
+
+        if (ads.length === 0) return null;
+        
+        return JSON.parse(JSON.stringify(ads[0]));
+
     } catch (error) {
-        console.error('Error fetching active ad:', error);
+        console.error('Error fetching random ad:', error);
         return null;
     }
 }
 
-export async function getAdSettings(): Promise<CustomAd | null> {
+
+export async function getAds(): Promise<CustomAd[]> {
     noStore();
     const isAdmin = await isAdminAuthenticated();
-    if (!isAdmin) return null;
+    if (!isAdmin) return [];
 
     try {
         const db = await connectToDatabase();
-        // Find the most recently updated ad setting
-        const ad = await db.collection<CustomAd>('custom_ads').findOne({}, { sort: { updatedAt: -1 } });
-        if (!ad) return null;
-        return JSON.parse(JSON.stringify(ad));
+        const ads = await db.collection<CustomAd>('custom_ads').find().sort({ createdAt: -1 }).toArray();
+        return JSON.parse(JSON.stringify(ads));
     } catch (error) {
-        console.error('Error fetching ad settings:', error);
-        return null;
+        console.error('Error fetching ads:', error);
+        return [];
     }
 }
 
-export async function saveAdSettings(prevState: { success: boolean, message: string }, formData: FormData): Promise<{ success: boolean, message: string }> {
+export async function saveAd(prevState: { success: boolean, message: string }, formData: FormData): Promise<{ success: boolean, message: string }> {
     const isAdmin = await isAdminAuthenticated();
     if (!isAdmin) {
         return { success: false, message: 'Unauthorized' };
@@ -71,21 +75,14 @@ export async function saveAdSettings(prevState: { success: boolean, message: str
         return { success: false, message: `Invalid data: ${errors}` };
     }
 
-    const { videoUrl, ctaText, ctaLink, ctaShape, ctaColor, totalDuration, rewardTime } = validated.data;
+    const { adId, videoUrl, ctaText, ctaLink, ctaShape, ctaColor, totalDuration, rewardTime } = validated.data;
     const hideCtaButton = rawData.hideCtaButton === 'on';
 
     try {
         const db = await connectToDatabase();
         const now = new Date();
 
-        // Deactivate all other ads
-        await db.collection<CustomAd>('custom_ads').updateMany(
-            { isActive: true },
-            { $set: { isActive: false, updatedAt: now } }
-        );
-        
-        // Create the new ad setting as the only active one
-        const newAd: Omit<CustomAd, '_id'> = {
+        const adData: Omit<CustomAd, '_id' | 'createdAt'> = {
             videoUrl,
             ctaText,
             ctaLink,
@@ -94,20 +91,50 @@ export async function saveAdSettings(prevState: { success: boolean, message: str
             totalDuration,
             rewardTime: rewardTime || undefined,
             hideCtaButton,
-            isActive: true,
-            createdAt: now,
             updatedAt: now,
         };
 
-        await db.collection<CustomAd>('custom_ads').insertOne(newAd as CustomAd);
+        if (adId) {
+            // Update existing ad
+            await db.collection<CustomAd>('custom_ads').updateOne(
+                { _id: new ObjectId(adId) },
+                { $set: adData }
+            );
+        } else {
+            // Create new ad
+            const newAd = { ...adData, createdAt: now };
+            await db.collection<CustomAd>('custom_ads').insertOne(newAd as CustomAd);
+        }
+        
 
         revalidatePath('/admin/custom-ads');
         revalidatePath('/watch-ad');
 
-        return { success: true, message: 'Ad settings saved and activated successfully.' };
+        return { success: true, message: `Ad ${adId ? 'updated' : 'saved'} successfully.` };
 
     } catch (error) {
-        console.error('Error saving ad settings:', error);
+        console.error('Error saving ad:', error);
         return { success: false, message: 'An unexpected error occurred.' };
     }
 }
+
+export async function deleteAd(adId: string): Promise<{ success: boolean, message: string }> {
+    const isAdmin = await isAdminAuthenticated();
+    if (!isAdmin) {
+        return { success: false, message: 'Unauthorized' };
+    }
+
+    try {
+        const db = await connectToDatabase();
+        const result = await db.collection<CustomAd>('custom_ads').deleteOne({ _id: new ObjectId(adId) });
+        if (result.deletedCount === 0) {
+            return { success: false, message: 'Ad not found.' };
+        }
+        revalidatePath('/admin/custom-ads');
+        return { success: true, message: 'Ad deleted successfully.' };
+    } catch (error) {
+        console.error('Error deleting ad:', error);
+        return { success: false, message: 'An error occurred.' };
+    }
+}
+

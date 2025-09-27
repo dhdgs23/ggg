@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { rewardAdCoins, getUserData } from '@/app/actions';
-import { getActiveAd } from '../admin/(protected)/custom-ads/actions';
+import { getRandomAd } from '../admin/(protected)/custom-ads/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, X, Volume2, VolumeX, SkipForward } from 'lucide-react';
 import type { CustomAd, User } from '@/lib/definitions';
@@ -36,7 +36,7 @@ export default function WatchAdPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const [adData, userData] = await Promise.all([getActiveAd(), getUserData()]);
+      const [adData, userData] = await Promise.all([getRandomAd(), getUserData()]);
       
       if (!userData) {
         setIsRegisterModalOpen(true);
@@ -52,6 +52,12 @@ export default function WatchAdPage() {
     }
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.push('/');
+    }
+  }, [shouldRedirect, router]);
 
   useEffect(() => {
       if (videoRef.current && ad) {
@@ -110,12 +116,6 @@ export default function WatchAdPage() {
     }
   }, [shouldGrantReward, toast]);
 
-  useEffect(() => {
-    if (shouldRedirect) {
-      router.push('/');
-    }
-  }, [shouldRedirect, router]);
-
   const handleCtaClick = useCallback(() => {
     if (ad) {
       window.open(ad.ctaLink, '_blank');
@@ -166,29 +166,17 @@ export default function WatchAdPage() {
 
     return (
       <div className="relative w-full h-full">
-        <div 
-          className="w-full h-full cursor-pointer"
-          onClick={handleCtaClick}
-        >
-            <video
-            ref={videoRef}
-            src={ad.videoUrl}
-            autoPlay
-            playsInline
-            muted={isMuted}
-            className="w-full h-full object-contain"
-            />
-        </div>
-        
-        <div className="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none">
-          <div className="flex justify-between items-center w-full pointer-events-auto">
+         <div className="absolute top-0 left-0 right-0 p-4 z-10 flex items-center gap-4">
             <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
                 <div
-                    className="h-full bg-white animate-progress-smooth"
-                    style={{ '--duration': `${ad.totalDuration}s` } as React.CSSProperties}
+                    className="h-full bg-white"
+                    style={{
+                        width: `${(timeElapsed / ad.totalDuration) * 100}%`,
+                        transition: 'width 1s linear'
+                    }}
                 />
             </div>
-             <div className="flex items-center gap-2 ml-4">
+             <div className="flex items-center gap-2">
                 <Button onClick={() => setIsMuted(!isMuted)} variant="ghost" size="icon" className="text-white">
                     {isMuted ? <VolumeX /> : <Volume2 />}
                 </Button>
@@ -200,10 +188,24 @@ export default function WatchAdPage() {
                 )}
             </div>
           </div>
-          
-          {!ad.hideCtaButton && (
-            <div className="fixed bottom-20 left-0 right-0 flex justify-center pointer-events-auto">
-              <div className={cn("transition-opacity duration-500", showCta ? 'animate-slide-in-up' : 'opacity-0')}>
+        
+        <div 
+          className="w-full h-full cursor-pointer"
+          onClick={handleCtaClick}
+        >
+            <video
+            ref={videoRef}
+            src={ad.videoUrl}
+            autoPlay
+            playsInline
+            muted={isMuted}
+            className="w-full h-full object-cover"
+            />
+        </div>
+        
+        {!ad.hideCtaButton && (
+             <div className="fixed bottom-20 left-0 right-0 flex justify-center pointer-events-auto">
+              <div className={cn("transition-opacity duration-500", showCta ? 'animate-in fade-in-0 slide-in-from-bottom-10 duration-700' : 'opacity-0')}>
                 <Button 
                     onClick={handleCtaClick}
                     size="lg"
@@ -217,8 +219,7 @@ export default function WatchAdPage() {
                 </Button>
               </div>
             </div>
-          )}
-        </div>
+        )}
       </div>
     );
   };
@@ -232,3 +233,4 @@ export default function WatchAdPage() {
      </>
   );
 }
+

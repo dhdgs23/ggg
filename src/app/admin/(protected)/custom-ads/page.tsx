@@ -1,10 +1,10 @@
-import { getAdSettings } from './actions';
+import { getAds } from './actions';
 import AdManager from './_components/ad-manager';
 import { unstable_noStore as noStore } from 'next/cache';
 
 export default async function CustomAdsPage() {
   noStore();
-  const adSettings = await getAdSettings();
+  const ads = await getAds();
   
-  return <AdManager initialAdSettings={adSettings} />;
+  return <AdManager allAds={ads} />;
 }
