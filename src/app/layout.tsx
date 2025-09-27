@@ -41,6 +41,7 @@ export default function RootLayout({
 
 
   const fetchInitialData = useCallback(async () => {
+    setIsLoading(true);
     const userData = await getUserData();
     setUser(userData);
     
@@ -63,6 +64,7 @@ export default function RootLayout({
       setStandardNotifications(standard);
       setPopupNotifications(popups);
     }
+    setIsLoading(false);
   }, []);
 
   const handleNotificationRefresh = useCallback(async () => {
@@ -75,9 +77,7 @@ export default function RootLayout({
 
   const onUserRegistered = useCallback(async () => {
     // Re-fetch all data when a user registers
-    setIsLoading(true);
     await fetchInitialData();
-    setIsLoading(false);
   }, [fetchInitialData]);
 
 
@@ -112,10 +112,6 @@ export default function RootLayout({
   useEffect(() => {
     fetchInitialData();
 
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000); 
-
     // Set up foreground message listener
     isSupported().then(isFCMSupported => {
         if (isFCMSupported && typeof window !== 'undefined') {
@@ -131,7 +127,6 @@ export default function RootLayout({
         }
     });
 
-    return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -186,8 +181,8 @@ export default function RootLayout({
         <BrowserRedirect />
         <RefreshProvider>
           {isLoading && <LoadingScreen />}
-          <div className={cn(isLoading ? 'hidden' : 'flex flex-col flex-1', isAdPage && 'h-screen')}>
-            {!isAdPage && (
+          <div className={cn('flex flex-col flex-1', (isAdPage || isLoading) && 'h-screen')}>
+            {!isAdPage && !isLoading && (
               <Header 
                 user={user} 
                 notifications={standardNotifications} 
@@ -195,8 +190,8 @@ export default function RootLayout({
                 onNotificationRefresh={handleNotificationRefresh}
               />
             )}
-            <main className={cn('flex-grow', isAdPage && 'h-full')}>{childrenWithProps}</main>
-            {!isAdPage && <Footer />}
+            <main className={cn('flex-grow', (isAdPage || isLoading) && 'h-full')}>{isLoading ? null : childrenWithProps}</main>
+            {!isAdPage && !isLoading && <Footer />}
           </div>
           <Toaster />
           {popupNotifications.length > 0 && (

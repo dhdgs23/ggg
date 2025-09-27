@@ -10,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, X, Volume2, VolumeX, SkipForward } from 'lucide-react';
 import type { CustomAd, User } from '@/lib/definitions';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import GamingIdModal from '@/components/gaming-id-modal';
 
@@ -22,7 +21,7 @@ export default function WatchAdPage() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [isRewardGranted, setIsRewardGranted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   
@@ -94,7 +93,7 @@ export default function WatchAdPage() {
       clearInterval(interval);
       clearTimeout(redirectTimer);
     };
-  }, [ad, isLoading, router]);
+  }, [ad, isLoading]);
   
   useEffect(() => {
     if (shouldGrantReward) {
@@ -112,9 +111,9 @@ export default function WatchAdPage() {
 
   useEffect(() => {
     if (isClosing) {
-        window.location.href = '/';
+        router.push('/');
     }
-  }, [isClosing]);
+  }, [isClosing, router]);
 
   const handleCtaClick = useCallback(() => {
     if (ad) {
@@ -171,7 +170,7 @@ export default function WatchAdPage() {
         >
           <div className="w-full bg-white/20 rounded-full h-1 overflow-hidden">
             <div
-              className="bg-white h-1 rounded-full animate-progress-smooth"
+              className="bg-white h-1 rounded-full animate-[progress-smooth_var(--duration)_linear_forwards]"
               style={{ '--duration': `${ad.totalDuration}s` } as React.CSSProperties}
             ></div>
           </div>
