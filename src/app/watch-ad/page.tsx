@@ -151,6 +151,17 @@ export default function WatchAdPage() {
         square: 'rounded-none'
     };
 
+    const colorClasses = {
+      primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+      destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+      outline: 'bg-transparent border-2 border-white text-white hover:bg-white/10',
+      blue: 'bg-blue-600 text-white hover:bg-blue-700',
+      green: 'bg-green-600 text-white hover:bg-green-700',
+      yellow: 'bg-yellow-500 text-black hover:bg-yellow-600',
+      black: 'bg-black text-white hover:bg-gray-800',
+      grey: 'bg-gray-500 text-white hover:bg-gray-600',
+    }
+
     const showSkipButton = isRewardGranted && ad.rewardTime && ad.rewardTime < ad.totalDuration;
 
     return (
@@ -195,9 +206,12 @@ export default function WatchAdPage() {
               <div className={cn("transition-opacity duration-500", showCta ? 'animate-slide-in-up' : 'opacity-0')}>
                 <Button 
                     onClick={handleCtaClick}
-                    variant={ad.ctaColor}
                     size="lg"
-                    className={cn("text-lg h-12 px-8 font-bold", buttonShapeClass[ad.ctaShape])}
+                    className={cn(
+                      "text-lg h-12 px-8 font-bold relative overflow-hidden animate-glowing-ray", 
+                      buttonShapeClass[ad.ctaShape], 
+                      colorClasses[ad.ctaColor]
+                    )}
                 >
                 {ad.ctaText}
                 </Button>

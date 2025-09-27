@@ -13,7 +13,7 @@ const adSchema = z.object({
     ctaText: z.string().min(1, 'Button text is required.'),
     ctaLink: z.string().url('Must be a valid URL.'),
     ctaShape: z.enum(['pill', 'rounded', 'square']),
-    ctaColor: z.enum(['primary', 'destructive', 'outline']),
+    ctaColor: z.enum(['primary', 'destructive', 'outline', 'blue', 'yellow', 'green', 'black', 'grey']),
     totalDuration: z.coerce.number().int().min(5, 'Total duration must be at least 5 seconds.'),
     rewardTime: z.coerce.number().int().min(1, 'Reward time must be at least 1 second.').optional().or(z.literal('')),
     hideCtaButton: z.enum(['on', 'off']).optional(),

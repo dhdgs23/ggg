@@ -1,3 +1,4 @@
+
 import { type ObjectId } from 'mongodb';
 
 // Represents a user account created via username/password on the /account page.
@@ -158,7 +159,7 @@ export interface CustomAd {
   ctaText: string;
   ctaLink: string;
   ctaShape: 'pill' | 'rounded' | 'square';
-  ctaColor: 'primary' | 'destructive' | 'outline';
+  ctaColor: 'primary' | 'destructive' | 'outline' | 'blue' | 'yellow' | 'green' | 'black' | 'grey';
   totalDuration: number; // in seconds
   rewardTime?: number; // in seconds, must be <= totalDuration
   hideCtaButton?: boolean;

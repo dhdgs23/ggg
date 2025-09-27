@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect } from 'react';
@@ -69,27 +70,32 @@ export default function AdManager({ initialAdSettings }: AdManagerProps) {
                     {/* CTA Button Settings */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-medium">Call-to-Action Button</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="ctaText">Button Text</Label>
                                 <Input id="ctaText" name="ctaText" placeholder="e.g., Install Now" defaultValue={initialAdSettings?.ctaText} required />
                             </div>
                             <div className="space-y-2">
                                 <Label>Button Shape</Label>
-                                <RadioGroup name="ctaShape" defaultValue={initialAdSettings?.ctaShape || 'rounded'} className="flex gap-4 pt-2">
+                                <RadioGroup name="ctaShape" defaultValue={initialAdSettings?.ctaShape || 'rounded'} className="flex flex-wrap gap-4 pt-2">
                                     <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="pill" /> Pill</Label>
                                     <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="rounded" /> Rounded</Label>
                                     <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="square" /> Square</Label>
                                 </RadioGroup>
                             </div>
-                             <div className="space-y-2">
-                                <Label>Button Color</Label>
-                                <RadioGroup name="ctaColor" defaultValue={initialAdSettings?.ctaColor || 'primary'} className="flex gap-4 pt-2">
-                                    <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="primary" /> Primary</Label>
-                                    <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="destructive" /> Destructive</Label>
-                                    <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="outline" /> Outline</Label>
-                                </RadioGroup>
-                            </div>
+                        </div>
+                         <div className="space-y-4 mt-6">
+                             <Label>Button Color</Label>
+                             <RadioGroup name="ctaColor" defaultValue={initialAdSettings?.ctaColor || 'primary'} className="flex flex-wrap gap-x-6 gap-y-4 pt-2">
+                                <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="primary" /> Primary</Label>
+                                <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="destructive" /> Destructive</Label>
+                                <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="outline" /> Outline</Label>
+                                <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="blue" /> Blue</Label>
+                                <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="green" /> Green</Label>
+                                <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="yellow" /> Yellow</Label>
+                                <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="black" /> Black</Label>
+                                <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="grey" /> Grey</Label>
+                            </RadioGroup>
                         </div>
                          <div className="flex items-center space-x-2 pt-4">
                             <Checkbox id="hideCtaButton" name="hideCtaButton" defaultChecked={initialAdSettings?.hideCtaButton} />
