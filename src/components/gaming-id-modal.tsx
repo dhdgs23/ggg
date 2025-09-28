@@ -29,8 +29,12 @@ export default function GamingIdModal({ isOpen, onOpenChange }: GamingIdModalPro
 
 
   const handleRegister = async () => {
-    if (!gamingId) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Please enter your Gaming ID.' });
+    if (!gamingId || gamingId.length < 8 || gamingId.length > 11) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Gaming ID',
+        description: 'Your Gaming ID must be between 8 and 11 digits long.',
+      });
       return;
     }
     setIsLoading(true);
@@ -137,6 +141,8 @@ Thank you for your consideration.
                     disabled={isLoading}
                     type="tel"
                     pattern="[0-9]*"
+                    minLength={8}
+                    maxLength={11}
                     />
                 </div>
                 <Button onClick={handleRegister} className="w-full" disabled={isLoading}>
