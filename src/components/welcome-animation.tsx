@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -16,10 +17,8 @@ export default function WelcomeAnimation({ coins }: WelcomeAnimationProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  const coinParticles = Array.from({ length: 15 });
-
   return (
-    <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm p-8">
+    <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-8">
         <div className="text-center p-8 pt-12 flex flex-col items-center">
             {/* Main animated icon */}
             <div className="relative inline-block mb-6">
@@ -59,21 +58,6 @@ export default function WelcomeAnimation({ coins }: WelcomeAnimationProps) {
                     Congratulations!
                 </p>
                 
-                {/* Coin particles shower */}
-                {coinParticles.map((_, i) => (
-                    <div
-                        key={i}
-                        className="absolute top-0 left-1/2 text-amber-400 animate-[coin-shower_1.5s_ease-out_1.5s_forwards]"
-                        style={{
-                            '--i': Math.random(),
-                            '--x': (Math.random() - 0.5) * 200,
-                            '--d': Math.random() * 0.5 + 0.3,
-                        } as React.CSSProperties}
-                        >
-                        <Coins className="w-4 h-4" />
-                    </div>
-                ))}
-                
                 <div className="flex items-center justify-center gap-2 mt-2 text-xl text-muted-foreground animate-[fade-in-up_0.5s_ease-out_1.4s_forwards] opacity-0">
                   You've received
                   <div className="relative flex items-center justify-center gap-1 font-bold text-foreground">
@@ -111,17 +95,8 @@ export default function WelcomeAnimation({ coins }: WelcomeAnimationProps) {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-15%); }
         }
-        @keyframes coin-shower {
-            0% {
-                transform: translate(0, -20px) scale(0);
-                opacity: 1;
-            }
-            100% {
-                transform: translate(calc(var(--x) * 1px), 100px) scale(1);
-                opacity: 0;
-            }
-        }
       `}</style>
     </div>
   );
 }
+
