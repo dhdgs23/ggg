@@ -2,9 +2,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Coins } from 'lucide-react';
-import Image from 'next/image';
 
 interface WelcomeAnimationProps {
   coins?: number;
@@ -22,34 +20,31 @@ export default function WelcomeAnimation({ coins }: WelcomeAnimationProps) {
   const coinParticles = Array.from({ length: 15 });
 
   return (
-    <Dialog open={true}>
-      <DialogContent className="w-full max-w-md p-0 flex items-center justify-center data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
-        <DialogHeader>
-          <DialogTitle className="sr-only">Welcome</DialogTitle>
-        </DialogHeader>
-          <div className="text-center p-8 pt-12 flex flex-col items-center">
+    <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-background p-8">
+        <div className="text-center p-8 pt-12 flex flex-col items-center">
             {/* Main animated icon */}
             <div className="relative inline-block mb-6">
-               <svg className="w-28 h-28" viewBox="0 0 100 100">
-                    {/* Garena 'G' Path */}
+                <svg className="w-28 h-28" viewBox="0 0 100 100">
+                    {/* Circle */}
                     <path 
-                        d="M 80 40 A 30 30 0 1 0 50 20" 
+                        d="M 50, 5 A 45,45 0 1 1 49.9,5"
                         fill="none" 
                         stroke="hsl(var(--primary))" 
-                        strokeWidth="10" 
+                        strokeWidth="5" 
                         strokeLinecap="round" 
                         className="animate-[draw-g_1s_ease-out_forwards]"
-                        style={{ strokeDasharray: 150, strokeDashoffset: 150 }}
+                        style={{ strokeDasharray: 283, strokeDashoffset: 283 }}
                     />
-                    {/* Inner rectangle */}
+                    {/* Checkmark */}
                     <path 
-                        d="M 45 45 L 65 45 L 65 55" 
+                        d="M30 50 L45 65 L70 40" 
                         fill="none" 
                         stroke="hsl(var(--primary))" 
-                        strokeWidth="10" 
+                        strokeWidth="6" 
                         strokeLinecap="round" 
+                        strokeLinejoin="round"
                         className="animate-[draw-inner_0.5s_ease-out_0.8s_forwards]"
-                        style={{ strokeDasharray: 40, strokeDashoffset: 40 }}
+                        style={{ strokeDasharray: 60, strokeDashoffset: 60 }}
                     />
                 </svg>
             </div>
@@ -87,21 +82,19 @@ export default function WelcomeAnimation({ coins }: WelcomeAnimationProps) {
                         <Coins className="w-6 h-6 text-amber-500 animate-[bounce-short_1s_ease-in-out_infinite]" style={{ animationDelay: '1.8s' }} />
                         {coins} Coins
                     </div>
-
                   </div>
                 </div>
               </div>
             )}
             
             {/* Progress bar */}
-            <div className="w-full bg-muted rounded-full h-1.5 mt-8 overflow-hidden">
+            <div className="w-full max-w-xs bg-muted rounded-full h-1.5 mt-8 overflow-hidden">
               <div
                 className="bg-primary h-1.5 rounded-full animate-progress-smooth"
                 style={{'--duration': '3s', animationDelay: '0.5s'} as React.CSSProperties}
               ></div>
             </div>
-          </div>
-      </DialogContent>
+        </div>
 
       <style jsx>{`
         @keyframes draw-g { to { stroke-dashoffset: 0; } }
@@ -130,6 +123,6 @@ export default function WelcomeAnimation({ coins }: WelcomeAnimationProps) {
             }
         }
       `}</style>
-    </Dialog>
+    </div>
   );
 }
