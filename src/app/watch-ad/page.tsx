@@ -21,7 +21,7 @@ export default function WatchAdPage() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [isRewardGranted, setIsRewardGranted] = useState(false);
   const [showCta, setShowCta] = useState(false);
   
