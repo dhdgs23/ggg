@@ -142,7 +142,7 @@ export default function FaqChatbot() {
       </SheetTrigger>
       <SheetContent className="flex flex-col">
         <SheetHeader className="mb-4">
-          <SheetTitle className="font-headline text-2xl flex items-center gap-2">
+          <SheetTitle className="font-headline text-xl flex items-center gap-2">
             <Sparkles className="text-primary w-6 h-6" />
             Garena Assistant
           </SheetTitle>
