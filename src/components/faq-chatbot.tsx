@@ -47,6 +47,15 @@ export default function FaqChatbot() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      const scrollViewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollViewport) {
+        scrollViewport.scrollTo({ top: scrollViewport.scrollHeight, behavior: 'smooth' });
+      }
+    }, 100); // A small delay to ensure the DOM has updated
+  }, []);
+
   const fetchHistory = useCallback(async () => {
     setIsHistoryLoading(true);
     const historyLogs = await getChatHistory();
@@ -65,13 +74,18 @@ export default function FaqChatbot() {
       setMessages([]); // Clear messages when closing
     }
   }, [isOpen, fetchHistory]);
+  
+  useEffect(() => {
+    if (!isHistoryLoading) {
+      scrollToBottom();
+    }
+  }, [isHistoryLoading, scrollToBottom]);
 
   useEffect(() => {
-      // Scroll to bottom when messages update
-      if (scrollAreaRef.current) {
-          scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-      }
-  }, [messages, isHistoryLoading]);
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages, scrollToBottom]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
