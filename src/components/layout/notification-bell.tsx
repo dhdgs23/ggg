@@ -90,7 +90,7 @@ export default function NotificationBell({ notifications: initialNotifications, 
           <SheetDescription>Here are your recent notifications from the admin.</SheetDescription>
         </SheetHeader>
         <ScrollArea className="h-[calc(100vh-150px)] pr-4 -mr-6">
-          <div className="space-y-4 pb-4">
+          <div className="space-y-4 pb-8">
             {currentNotifications.map((notification) => (
               <div key={notification._id.toString()} className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
                 <p className="text-sm mb-2 font-sans">{notification.message}</p>
