@@ -87,7 +87,7 @@ export default function NotificationBell({ notifications: initialNotifications, 
       <SheetContent>
         <SheetHeader className="mb-4">
           <SheetTitle>Notifications</SheetTitle>
-          <SheetDescription>Here are your recent notifications from the admin.</SheetDescription>
+          <SheetDescription>Here are your recent notifications from Garena.</SheetDescription>
         </SheetHeader>
         <ScrollArea className="h-[calc(100vh-150px)] pr-4 -mr-6">
           <div className="space-y-4 pb-8">
