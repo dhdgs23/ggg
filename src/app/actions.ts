@@ -2,6 +2,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1855,7 +1856,7 @@ export async function getChatHistory(): Promise<AiLog[]> {
 }
 
 
-export async function getAiLogs(page: number, search: string) {
+export async function getAiLogs(page: number, search: string, sort: string) {
     noStore();
     const db = await connectToDatabase();
     const skip = (page - 1) * PAGE_SIZE;
@@ -1867,7 +1868,7 @@ export async function getAiLogs(page: number, search: string) {
 
     const logsFromDb = await db.collection<AiLog>('ai_logs')
         .find(query)
-        .sort({ createdAt: -1 })
+        .sort({ createdAt: sort === 'asc' ? 1 : -1 })
         .skip(skip)
         .limit(PAGE_SIZE)
         .toArray();

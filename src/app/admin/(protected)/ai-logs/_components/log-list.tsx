@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, Search, Trash2 } from 'lucide-react';
+import { Loader2, Search, Trash2, ArrowUpDown } from 'lucide-react';
 import { getAiLogs, deleteAiLog } from '@/app/actions';
 import { Input } from '@/components/ui/input';
 import { type AiLog } from '@/lib/definitions';
@@ -47,6 +47,7 @@ export default function LogList({ initialLogs, initialHasMore, totalLogs }: LogL
 
 
     const search = searchParams.get('search') || '';
+    const sort = searchParams.get('sort') || 'desc';
 
     useEffect(() => {
         setLogs(initialLogs);
@@ -68,7 +69,7 @@ export default function LogList({ initialLogs, initialHasMore, totalLogs }: LogL
     const handleLoadMore = async () => {
         startTransition(async () => {
             const nextPage = page + 1;
-            const { logs: newLogs, hasMore: newHasMore } = await getAiLogs(nextPage, search);
+            const { logs: newLogs, hasMore: newHasMore } = await getAiLogs(nextPage, search, sort);
             setLogs(prev => [...prev, ...newLogs]);
             setHasMore(newHasMore);
             setPage(nextPage);
@@ -82,6 +83,13 @@ export default function LogList({ initialLogs, initialHasMore, totalLogs }: LogL
         const params = new URLSearchParams(searchParams);
         params.set('search', searchQuery);
         params.delete('page');
+        router.push(`${pathname}?${params.toString()}`);
+    };
+    
+    const handleSortToggle = () => {
+        const newSort = sort === 'desc' ? 'asc' : 'desc';
+        const params = new URLSearchParams(searchParams);
+        params.set('sort', newSort);
         router.push(`${pathname}?${params.toString()}`);
     };
     
@@ -106,10 +114,16 @@ export default function LogList({ initialLogs, initialHasMore, totalLogs }: LogL
                            <CardTitle>AI Conversation Logs</CardTitle>
                            <Badge variant="secondary" className="text-sm">{totalLogs} Messages</Badge>
                         </div>
-                        <form onSubmit={handleSearch} className="flex items-center gap-2">
-                            <Input name="search" placeholder="Search by Gaming ID..." defaultValue={search} className="w-56"/>
-                            <Button type="submit" variant="outline" size="icon"><Search className="h-4 w-4" /></Button>
-                        </form>
+                        <div className="flex items-center gap-2">
+                            <form onSubmit={handleSearch} className="flex items-center gap-2">
+                                <Input name="search" placeholder="Search by Gaming ID..." defaultValue={search} className="w-56"/>
+                                <Button type="submit" variant="outline" size="icon"><Search className="h-4 w-4" /></Button>
+                            </form>
+                            <Button variant="outline" onClick={handleSortToggle}>
+                                <ArrowUpDown className="mr-2 h-4 w-4" />
+                                {sort === 'desc' ? 'Newest First' : 'Oldest First'}
+                            </Button>
+                        </div>
                     </div>
                      <CardDescription>View the conversations users are having with the FAQ chatbot.</CardDescription>
                 </CardHeader>
