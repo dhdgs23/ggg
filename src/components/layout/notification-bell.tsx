@@ -54,7 +54,7 @@ const ClickableMessage = ({ message }: { message: string }) => {
               href={part}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="text-blue-600 hover:underline"
               onClick={(e) => e.stopPropagation()} // Prevent sheet from closing
             >
               {part}
