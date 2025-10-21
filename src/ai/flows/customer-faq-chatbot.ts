@@ -141,6 +141,14 @@ const prompt = ai.definePrompt({
     4. Our team will review your request. All refunds are subject to our terms and conditions.
 
   ---
+  **Special Subscription Offers Context:**
+
+  - We sometimes send special subscription offers to lucky users, new users, or other special members of our community.
+  - These offers are delivered via a link in a user's notification panel.
+  - When a user clicks on this link, they will see the details of the special subscription and can choose to purchase it.
+  - These subscriptions can be billed on a weekly, monthly, or yearly basis.
+
+  ---
   **Terms & Conditions Context:**
 
   - Accounts: Users must provide accurate and current information. Users are responsible for safeguarding their passwords.
