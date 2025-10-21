@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -65,31 +66,29 @@ const CountdownTimer = ({ endDate, isComingSoon }: { endDate: Date; isComingSoon
 
   const hasEnded = days === 0 && hours === 0 && minutes === 0 && seconds === 0;
 
+  if (hasEnded) {
+    return null; // When the timer finishes, render nothing.
+  }
+
   const timerLabel = isComingSoon ? "Coming Soon:" : "Ending soon:";
   const timerColor = isComingSoon ? "text-teal-600 border-teal-500/20" : "text-destructive border-destructive/20";
-  const finishedLabel = isComingSoon ? "Available Now" : "Ended";
-  const finishedColor = "text-muted-foreground border-muted-foreground/20";
 
 
   return (
     <div className={cn(
         "absolute top-2 right-2 bg-background/80 backdrop-blur-sm font-bold text-xs px-2 py-1 rounded-full shadow-md flex items-center gap-1.5 border",
-        hasEnded ? finishedColor : timerColor
+        timerColor
       )}>
         <Timer className="w-3.5 h-3.5" />
-        {hasEnded ? (
-            <span>{finishedLabel}</span>
-        ) : (
-            <>
-                <span>{timerLabel}</span>
-                <div className="flex items-center gap-1 font-mono tracking-tighter">
-                    {days > 0 && <span>{String(days).padStart(2, '0')}d</span>}
-                    <span>{String(hours).padStart(2, '0')}h</span>
-                    <span>{String(minutes).padStart(2, '0')}m</span>
-                    <span>{String(seconds).padStart(2, '0')}s</span>
-                </div>
-            </>
-        )}
+        <>
+            <span>{timerLabel}</span>
+            <div className="flex items-center gap-1 font-mono tracking-tighter">
+                {days > 0 && <span>{String(days).padStart(2, '0')}d</span>}
+                <span>{String(hours).padStart(2, '0')}h</span>
+                <span>{String(minutes).padStart(2, '0')}m</span>
+                <span>{String(seconds).padStart(2, '0')}s</span>
+            </div>
+        </>
        
     </div>
   );
