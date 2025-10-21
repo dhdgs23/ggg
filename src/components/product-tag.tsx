@@ -14,8 +14,14 @@ export default function ProductTag({ tag, color = 'green' }: ProductTagProps) {
   }
   
   const colorClasses = {
-      green: 'bg-green-600 border-t-green-600',
-      red: 'bg-red-600 border-t-red-600'
+      green: {
+          bg: 'bg-green-600',
+          border: 'border-t-green-600'
+      },
+      red: {
+          bg: 'bg-red-600',
+          border: 'border-t-red-600'
+      }
   }
 
   return (
@@ -26,7 +32,7 @@ export default function ProductTag({ tag, color = 'green' }: ProductTagProps) {
             'text-xs font-bold uppercase tracking-wider',
             'px-2 py-1 rounded-md',
             'overflow-hidden animate-glowing-ray',
-            colorClasses[color]
+            colorClasses[color].bg
           )}
         >
           {tag}
@@ -34,9 +40,9 @@ export default function ProductTag({ tag, color = 'green' }: ProductTagProps) {
         <div className={cn(
             "absolute top-full right-2 w-0 h-0",
             "border-l-[10px] border-l-transparent",
-            "border-r-0 border-r-transparent",
+            "border-r-[0px] border-r-transparent",
             "border-t-[8px]",
-            colorClasses[color]
+            colorClasses[color].border
         )}></div>
     </div>
   );
