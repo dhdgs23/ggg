@@ -20,7 +20,7 @@ export default function ProductTag({ tag }: ProductTagProps) {
         'px-3 py-1',
         'rounded-full shadow-lg',
         'transform rotate-12',
-        'relative overflow-hidden animate-glowing-ray'
+        'overflow-hidden animate-glowing-ray'
       )}
     >
       {tag}

@@ -167,30 +167,32 @@ export default function ProductCard({ product, user, orders, control }: ProductC
 
   return (
     <>
-      <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative">
+      <div className="relative">
         {product.tag && <ProductTag tag={product.tag} />}
-        <CardHeader className="p-0">
-          <div className="relative aspect-video">
-            <Image src={product.imageUrl} alt={product.name} fill className="object-cover" data-ai-hint={product.dataAiHint}/>
-            {product.endDate && <CountdownTimer endDate={new Date(product.endDate)} isComingSoon={product.isComingSoon} />}
-          </div>
-        </CardHeader>
-        <CardContent className="flex-grow p-4">
-          <CardTitle className="text-lg font-headline font-semibold">{product.name}</CardTitle>
-          <CardDescription className="text-sm">
-            Quantity: {product.quantity}
-          </CardDescription>
-          {product.coinsApplicable > 0 && !product.isCoinProduct && (
-            <div className="text-xs text-amber-600 font-semibold mt-1 flex items-center font-sans gap-1">
-              <Coins className="w-3 h-3" />
-              Use {product.coinsApplicable} Coins & Get it for ₹{finalPrice}
+        <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+          <CardHeader className="p-0">
+            <div className="relative aspect-video">
+              <Image src={product.imageUrl} alt={product.name} fill className="object-cover" data-ai-hint={product.dataAiHint}/>
+              {product.endDate && <CountdownTimer endDate={new Date(product.endDate)} isComingSoon={product.isComingSoon} />}
             </div>
-          )}
-        </CardContent>
-        <CardFooter className="p-4 pt-0">
-          {getBuyButton()}
-        </CardFooter>
-      </Card>
+          </CardHeader>
+          <CardContent className="flex-grow p-4">
+            <CardTitle className="text-lg font-headline font-semibold">{product.name}</CardTitle>
+            <CardDescription className="text-sm">
+              Quantity: {product.quantity}
+            </CardDescription>
+            {product.coinsApplicable > 0 && !product.isCoinProduct && (
+              <div className="text-xs text-amber-600 font-semibold mt-1 flex items-center font-sans gap-1">
+                <Coins className="w-3 h-3" />
+                Use {product.coinsApplicable} Coins & Get it for ₹{finalPrice}
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="p-4 pt-0">
+            {getBuyButton()}
+          </CardFooter>
+        </Card>
+      </div>
       {isModalOpen && <PurchaseModal product={productWithStrId} user={user} onClose={() => setIsModalOpen(false)} />}
     </>
   );
