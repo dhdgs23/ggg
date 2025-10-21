@@ -13,12 +13,12 @@ export default function ProductTag({ tag }: ProductTagProps) {
   }
 
   return (
-    <div className="absolute -top-4 -right-4 z-10 drop-shadow-lg" style={{ transform: 'rotate(15deg)' }}>
+    <div className="absolute -top-5 -right-4 z-10 drop-shadow-lg" style={{ transform: 'rotate(15deg)' }}>
         <div 
           className={cn(
             'relative bg-green-600 text-white',
             'text-xs font-bold uppercase tracking-wider',
-            'px-3 py-1.5 rounded-md',
+            'px-2 py-1.5 rounded-lg',
             'overflow-hidden animate-glowing-ray'
           )}
         >
