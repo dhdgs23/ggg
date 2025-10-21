@@ -1,3 +1,4 @@
+
 'use client';
 
 import { cn } from '@/lib/utils';
@@ -18,6 +19,7 @@ export default function ProductTag({ tag }: ProductTagProps) {
             'relative bg-green-600 text-white',
             'text-xs font-bold uppercase tracking-wider',
             'px-3 py-1.5 rounded-md',
+            'overflow-hidden animate-glowing-ray'
           )}
         >
           {tag}
