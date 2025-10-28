@@ -12,7 +12,7 @@ import NotificationBell from './notification-bell';
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/account', label: 'Account' },
+  { href: '/about', label: 'About' },
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/terms', label: 'T&C' },
   { href: '/refund', label: 'Refund Policy' },
