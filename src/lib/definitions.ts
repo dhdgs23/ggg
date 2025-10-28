@@ -54,7 +54,7 @@ export interface Product {
     endDate?: Date;
     isComingSoon?: boolean;
     displayOrder?: number;
-    category?: string;
+    category?: string[];
     onlyUpi?: boolean;
     oneTimeBuy?: boolean;
     visibility?: 'all' | 'custom';

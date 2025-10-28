@@ -70,10 +70,15 @@ export default function ProductList({ initialProducts, initialUser, initialOrder
   }, [refreshKey, fetchData]);
 
   const categories = useMemo(() => {
-    const allCategories = products
-      .map(p => p.category)
-      .filter((c): c is string => !!c);
-    return ['all', ...Array.from(new Set(allCategories))];
+    const allCategories = new Set<string>();
+    products.forEach(p => {
+        if(Array.isArray(p.category)) {
+            p.category.forEach(c => allCategories.add(c));
+        } else if (p.category) {
+            allCategories.add(p.category as unknown as string);
+        }
+    });
+    return ['all', ...Array.from(allCategories)];
   }, [products]);
 
   const filteredAndSortedProducts = useMemo(() => {
@@ -88,7 +93,7 @@ export default function ProductList({ initialProducts, initialUser, initialOrder
     }
 
     if (selectedCategory !== 'all') {
-      currentProducts = currentProducts.filter(p => p.category === selectedCategory);
+      currentProducts = currentProducts.filter(p => Array.isArray(p.category) && p.category.includes(selectedCategory));
     }
 
     if (searchTerm.trim() !== '') {

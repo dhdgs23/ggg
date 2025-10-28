@@ -10,6 +10,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -1273,6 +1274,8 @@ export async function updateProduct(productId: string, formData: FormData): Prom
         ? data.visibleTo.split(',').map(id => id.trim()).filter(id => id)
         : [];
     
+    const categories = data.category ? data.category.split(',').map(c => c.trim()).filter(c => c) : [];
+
     const updateData: Partial<Product> & { $unset?: any } = {
         name: data.name,
         price: data.price,
@@ -1284,7 +1287,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
         endDate,
         imageUrl: data.imageUrl,
         displayOrder: data.displayOrder,
-        category: data.category,
+        category: categories,
         isCoinProduct,
         purchasePrice: isCoinProduct ? data.purchasePrice : undefined,
         coinsApplicable: isCoinProduct ? 0 : data.coinsApplicable,
@@ -1358,7 +1361,7 @@ export async function addProduct(isCoinProduct: boolean): Promise<{ success: boo
             coinsApplicable: 0,
             isCoinProduct: true,
             displayOrder: newDisplayOrder,
-            category: "Coins",
+            category: ["Coins"],
             onlyUpi: false,
             oneTimeBuy: false,
             visibility: 'all',
@@ -1376,7 +1379,7 @@ export async function addProduct(isCoinProduct: boolean): Promise<{ success: boo
             isVanished: false,
             coinsApplicable: 0,
             displayOrder: newDisplayOrder,
-            category: "Uncategorized",
+            category: ["Uncategorized"],
             onlyUpi: false,
             oneTimeBuy: false,
             visibility: 'all',

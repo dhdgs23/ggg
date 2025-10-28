@@ -2,13 +2,13 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Trash2, Coins, PlusCircle, Users, User, Clock } from 'lucide-react';
+import { Loader2, Trash2, Coins, PlusCircle, Users, User, Clock, Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { updateProduct, vanishProduct, addProduct } from '@/app/actions';
 import type { Product } from '@/lib/definitions';
@@ -17,6 +17,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 
 
 interface PriceManagementListProps {
@@ -33,13 +34,65 @@ const formatDateForInput = (date?: Date) => {
   return localDate.toISOString().slice(0, 16);
 };
 
+const CategoryManager = ({ product, onCategoriesChange }: { product: Product, onCategoriesChange: (categories: string[]) => void }) => {
+    const [categories, setCategories] = useState(product.category || []);
+    const [newCategory, setNewCategory] = useState('');
+
+    const handleAddCategory = () => {
+        if (newCategory && !categories.includes(newCategory)) {
+            const updatedCategories = [...categories, newCategory];
+            setCategories(updatedCategories);
+            onCategoriesChange(updatedCategories);
+            setNewCategory('');
+        }
+    };
+
+    const handleRemoveCategory = (categoryToRemove: string) => {
+        const updatedCategories = categories.filter(c => c !== categoryToRemove);
+        setCategories(updatedCategories);
+        onCategoriesChange(updatedCategories);
+    };
+
+    return (
+        <div className="space-y-2">
+            <Label htmlFor={`category-${product._id}`}>Category</Label>
+            <div className="flex flex-wrap gap-2">
+                {categories.map(cat => (
+                    <Badge key={cat} variant="secondary" className="flex items-center gap-1">
+                        {cat}
+                        <button type="button" onClick={() => handleRemoveCategory(cat)} className="rounded-full hover:bg-muted-foreground/20">
+                            <X className="h-3 w-3" />
+                        </button>
+                    </Badge>
+                ))}
+            </div>
+            <div className="flex gap-2">
+                <Input
+                    id={`category-input-${product._id}`}
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    placeholder="Add a category"
+                />
+                <Button type="button" size="icon" onClick={handleAddCategory}>
+                    <Plus className="h-4 w-4" />
+                </Button>
+            </div>
+            <input type="hidden" name="category" value={categories.join(',')} />
+        </div>
+    );
+};
+
 
 export default function PriceManagementList({ initialProducts }: PriceManagementListProps) {
   const [products, setProducts] = useState(initialProducts);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [productCategories, setProductCategories] = useState<Record<string, string[]>>({});
 
+  const handleCategoriesChange = (productId: string, categories: string[]) => {
+    setProductCategories(prev => ({ ...prev, [productId]: categories }));
+  };
 
   const handleUpdate = (productId: string, formData: FormData) => {
     startTransition(async () => {
@@ -174,12 +227,10 @@ export default function PriceManagementList({ initialProducts }: PriceManagement
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`category-${product._id}`}>Category</Label>
-                  <Input
-                    id={`category-${product._id}`}
-                    name="category"
-                    defaultValue={product.category}
-                  />
+                    <CategoryManager 
+                        product={product} 
+                        onCategoriesChange={(categories) => handleCategoriesChange(product._id.toString(), categories)}
+                    />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`tag-${product._id}`}>Product Tag</Label>
