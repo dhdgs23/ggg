@@ -1,9 +1,7 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import {
   Carousel,
   CarouselContent,
@@ -16,6 +14,7 @@ import Autoplay from 'embla-carousel-autoplay';
 import { cn } from '@/lib/utils';
 import type { SliderImage } from '@/lib/definitions';
 import { Skeleton } from './ui/skeleton';
+import SliderMedia from './slider-media';
 
 interface ImageSliderProps {
     sliderImages: SliderImage[];
@@ -82,11 +81,9 @@ export default function ImageSlider({ sliderImages }: ImageSliderProps) {
             {sliderImages.map((image, index) => (
               <CarouselItem key={image._id.toString()}>
                 <div className="relative h-[180px] md:h-[220px] lg:h-[250px] w-full overflow-hidden rounded-lg">
-                  <Image
+                  <SliderMedia
                     src={image.imageUrl}
-                    alt={`Slider image ${index + 1}`}
-                    fill
-                    className="object-cover"
+                    alt={`Slider content ${index + 1}`}
                     priority={index === 0}
                   />
                 </div>
