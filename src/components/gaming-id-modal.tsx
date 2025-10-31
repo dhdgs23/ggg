@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WelcomeAnimation from './welcome-animation';
+import { cn } from '@/lib/utils';
 
 interface GamingIdModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export default function GamingIdModal({ isOpen, onOpenChange }: GamingIdModalPro
   const [isLoading, setIsLoading] = useState(false);
   const [bannedInfo, setBannedInfo] = useState<{ message: string } | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState<{coins?: number} | null>(null);
+  const [isShifted, setIsShifted] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -95,12 +97,16 @@ Thank you for your consideration.
     // Only allow digits by replacing any non-digit character with an empty string
     const digitsOnly = value.replace(/\D/g, '');
     setGamingId(digitsOnly);
+    if (isMobile) {
+      setIsShifted(digitsOnly.length > 0);
+    }
   };
   
   const handleOpenChangeWithReset = (open: boolean) => {
     if (!open) {
         setBannedInfo(null);
         setGamingId('');
+        setIsShifted(false);
     }
     onOpenChange(open);
   }
@@ -111,7 +117,10 @@ Thank you for your consideration.
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChangeWithReset}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={cn(
+          "sm:max-w-md transition-transform duration-300 ease-in-out",
+          isShifted && "-translate-y-24"
+        )}>
         {bannedInfo ? (
             <>
                 <DialogHeader>
