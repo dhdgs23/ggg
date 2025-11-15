@@ -15,6 +15,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -30,7 +31,6 @@ import { redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
 import { sendRedeemCodeNotification } from '@/lib/email';
 import { ObjectId } from 'mongodb';
-import Razorpay from 'razorpay';
 import { sendPushNotification, sendMulticastPushNotification } from '@/lib/push-notifications';
 import { promoteVisualId } from '@/lib/visual-id-promoter';
 import { setSmartVisualId } from '@/lib/auto-visual-id';
@@ -784,65 +784,6 @@ export async function createRedeemCodeOrder(
     }
 }
 
-// --- Razorpay Actions ---
-export async function createRazorpayOrder(amount: number, gamingId: string, productId: string, transactionId: string) {
-    noStore();
-    const razorpay = new Razorpay({
-        key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
-        key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-    });
-
-    const db = await connectToDatabase();
-    const product = await db.collection<Product>('products').findOne({ _id: new ObjectId(productId) });
-    if (!product) {
-        return { success: false, error: 'Product not found.' };
-    }
-
-    const notes = {
-        gamingId: gamingId,
-        productId: productId,
-        transactionId: transactionId,
-    };
-
-    try {
-        const orderPromise = razorpay.orders.create({
-            amount: amount * 100, // amount in the smallest currency unit
-            currency: "INR",
-            notes: notes
-        });
-
-        const qrPromise = razorpay.qrCode.create({
-            type: "upi_qr",
-            name: `Garena: ${product.name}`,
-            usage: "single_use",
-            fixed_amount: true,
-            payment_amount: amount * 100,
-            description: `Purchase for: ${product.name}`,
-            notes: notes
-        });
-
-        const linkPromise = razorpay.paymentLink.create({
-            amount: amount * 100,
-            currency: "INR",
-            upi_link: true,
-            description: `Purchase for: ${product.name}`,
-            notes: notes,
-            callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/`,
-            callback_method: 'get'
-        });
-
-        const [order, qrCode, paymentLink] = await Promise.all([orderPromise, qrPromise, linkPromise]);
-        
-        return { success: true, orderId: order.id, qrImageUrl: qrCode.image_url, paymentLinkUrl: paymentLink.short_url };
-    } catch (error: any) {
-        console.error('Error creating Razorpay QR or Link:', error.error?.description || error);
-        return { success: false, error: 'Failed to create payment details. ' + (error.error?.description || '') };
-    }
-}
-
-
-
-
 // --- Admin Actions ---
 type AdminFormState = {
   message: string;
@@ -1156,57 +1097,62 @@ export async function updateWithdrawalStatus(withdrawalId: string, status: 'Comp
 // --- Product Management Actions ---
 export async function getProducts(query?: any): Promise<Product[]> {
     noStore();
-    const db = await connectToDatabase();
-    const now = new Date();
-    
-    const gamingId = cookies().get('gaming_id')?.value;
-    
-    // Base query to exclude vanished products
-    let baseQuery: any = { isVanished: { $ne: true }, ...(query || {}) };
-    
-    // If a user is logged in, apply visibility rules
-    if (gamingId) {
-        baseQuery = {
-            ...baseQuery,
-            $or: [
-                { visibility: { $ne: 'custom' } }, // Product is visible to all
-                { visibleTo: gamingId }           // Product is visible to this specific user
-            ]
-        };
-    } else {
-        // If no user is logged in, only show products visible to all
-        baseQuery.visibility = { $ne: 'custom' };
-    }
-
-    const productsFromDb = await db.collection<Product>('products')
-      .find(baseQuery)
-      .sort({ displayOrder: 1 })
-      .toArray();
-
-    // Batch update products that are now available
-    const newlyAvailableProductIds = productsFromDb
-        .filter(p => p.isComingSoon && p.endDate && new Date(p.endDate) <= now && !p.isAvailable)
-        .map(p => p._id);
-
-    if (newlyAvailableProductIds.length > 0) {
-        await db.collection<Product>('products').updateMany(
-            { _id: { $in: newlyAvailableProductIds } },
-            { $set: { isAvailable: true, isComingSoon: false } }
-        );
-        // Refetch after update to ensure data consistency
-        const updatedProducts = await db.collection<Product>('products').find(baseQuery).sort({ displayOrder: 1 }).toArray();
-        return JSON.parse(JSON.stringify(updatedProducts));
-    }
-      
-    // Handle automatic expiration for non-coming-soon products
-    const processedProducts = productsFromDb.map(product => {
-        if (!product.isComingSoon && product.endDate && new Date(product.endDate) < now) {
-            return { ...product, isAvailable: false };
+    try {
+        const db = await connectToDatabase();
+        const now = new Date();
+        
+        const gamingId = cookies().get('gaming_id')?.value;
+        
+        // Base query to exclude vanished products
+        let baseQuery: any = { isVanished: { $ne: true }, ...(query || {}) };
+        
+        // If a user is logged in, apply visibility rules
+        if (gamingId) {
+            baseQuery = {
+                ...baseQuery,
+                $or: [
+                    { visibility: { $ne: 'custom' } }, // Product is visible to all
+                    { visibleTo: gamingId }           // Product is visible to this specific user
+                ]
+            };
+        } else {
+            // If no user is logged in, only show products visible to all
+            baseQuery.visibility = { $ne: 'custom' };
         }
-        return product;
-    });
 
-    return JSON.parse(JSON.stringify(processedProducts));
+        const productsFromDb = await db.collection<Product>('products')
+          .find(baseQuery)
+          .sort({ displayOrder: 1 })
+          .toArray();
+
+        // Batch update products that are now available
+        const newlyAvailableProductIds = productsFromDb
+            .filter(p => p.isComingSoon && p.endDate && new Date(p.endDate) <= now && !p.isAvailable)
+            .map(p => p._id);
+
+        if (newlyAvailableProductIds.length > 0) {
+            await db.collection<Product>('products').updateMany(
+                { _id: { $in: newlyAvailableProductIds } },
+                { $set: { isAvailable: true, isComingSoon: false } }
+            );
+            // Refetch after update to ensure data consistency
+            const updatedProducts = await db.collection<Product>('products').find(baseQuery).sort({ displayOrder: 1 }).toArray();
+            return JSON.parse(JSON.stringify(updatedProducts));
+        }
+          
+        // Handle automatic expiration for non-coming-soon products
+        const processedProducts = productsFromDb.map(product => {
+            if (!product.isComingSoon && product.endDate && new Date(product.endDate) < now) {
+                return { ...product, isAvailable: false };
+            }
+            return product;
+        });
+
+        return JSON.parse(JSON.stringify(processedProducts));
+    } catch(e) {
+        console.error("Database connection failed in getProducts:", e);
+        return []; // Return empty array on error
+    }
 }
 
 

@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { Product, User } from '@/lib/definitions';
 import { Loader2, X, Smartphone, Globe, Coins, ShieldCheck, ShoppingCart, Check } from 'lucide-react';
 import Image from 'next/image';
-import { createRedeemCodeOrder, registerGamingId as registerAction, createRazorpayOrder } from '@/app/actions';
+import { createRedeemCodeOrder, registerGamingId as registerAction } from '@/app/actions';
+import { createPhonePeOrder } from '@/app/actions/phonepe';
 import {
   Select,
   SelectContent,
@@ -37,33 +38,7 @@ interface PurchaseModalProps {
   onClose: () => void;
 }
 
-type ModalStep = 'verifying' | 'register' | 'details' | 'processing' | 'qrPayment' | 'success';
-
-const Countdown = ({ onExpire }: { onExpire: () => void }) => {
-    const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
-
-    useEffect(() => {
-        if (timeLeft <= 0) {
-            onExpire();
-            return;
-        };
-
-        const intervalId = setInterval(() => {
-            setTimeLeft(timeLeft - 1);
-        }, 1000);
-
-        return () => clearInterval(intervalId);
-    }, [timeLeft, onExpire]);
-
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-
-    return (
-        <span className="font-mono font-semibold">
-            {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-        </span>
-    )
-}
+type ModalStep = 'verifying' | 'register' | 'details' | 'processing' | 'success';
 
 export default function PurchaseModal({ product, user: initialUser, onClose }: PurchaseModalProps) {
   const [isOpen, setIsOpen] = useState(true);
@@ -72,8 +47,6 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
   const [gamingId, setGamingId] = useState(initialUser?.gamingId || '');
   const [redeemCode, setRedeemCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [paymentDetails, setPaymentDetails] = useState<{qrImageUrl: string; paymentLinkUrl: string; orderId: string;} | null>(null);
-  const [isQrLoading, setIsQrLoading] = useState(false);
   const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
@@ -86,42 +59,6 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
     setCurrentTransactionId(null);
     setTimeout(onClose, 300); // Allow for closing animation
   }, [onClose]);
-  
-  const handleTimerExpire = () => {
-    toast({
-        variant: "destructive",
-        title: "Session Expired",
-        description: "Your payment session has expired. Please try again.",
-    });
-    handleClose();
-  }
-
-  // Polling logic for QR code payment
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-    if (step === 'qrPayment' && currentTransactionId) {
-      intervalId = setInterval(async () => {
-        try {
-          const response = await fetch(`/api/check-order-status?transactionId=${currentTransactionId}`);
-          const data = await response.json();
-          if (data.success && data.orderFound) {
-            clearInterval(intervalId);
-            toast({
-                title: 'Payment Confirmed!',
-                description: "Your purchase is being processed.",
-            });
-            triggerRefresh();
-            setStep('success');
-            setTimeout(() => handleClose(), 5000);
-          }
-        } catch (error) {
-          console.error("Error checking payment status:", error);
-        }
-      }, 3000); // Poll every 3 seconds
-    }
-    return () => clearInterval(intervalId);
-  }, [step, currentTransactionId, triggerRefresh, handleClose, toast]);
-
 
   useEffect(() => {
     if (step === 'verifying' && user && !eligibilityCheckPerformed.current) {
@@ -174,28 +111,26 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
     : product.price - coinsToUse;
 
   const handleBuyWithUpi = async () => {
-    setIsQrLoading(true);
-    setStep('qrPayment');
+    setIsLoading(true);
     
     if (!user) {
         toast({ variant: 'destructive', title: 'Error', description: 'User not found.'});
-        setIsQrLoading(false);
-        setStep('details'); // Go back
+        setIsLoading(false);
         return;
     }
     
     const uniqueTransactionId = `${Date.now()}-${user.gamingId}-${product._id}`;
     setCurrentTransactionId(uniqueTransactionId);
 
-    const result = await createRazorpayOrder(finalPrice, user.gamingId, product._id, uniqueTransactionId);
+    const result = await createPhonePeOrder(finalPrice, user.gamingId, product._id, uniqueTransactionId);
 
-    if (result.success && result.qrImageUrl && result.paymentLinkUrl && result.orderId) {
-        setPaymentDetails({ qrImageUrl: result.qrImageUrl, paymentLinkUrl: result.paymentLinkUrl, orderId: result.orderId });
+    if (result.success && result.redirectUrl) {
+        router.push(result.redirectUrl);
     } else {
-        toast({ variant: 'destructive', title: 'Payment Error', description: result.error || 'Could not create payment details.' });
+        toast({ variant: 'destructive', title: 'Payment Error', description: result.error || 'Could not create payment link.' });
         handleClose();
     }
-    setIsQrLoading(false);
+    setIsLoading(false);
   };
 
 
@@ -228,8 +163,8 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
                 </DialogHeader>
                 <div className="flex flex-col items-center justify-center text-center space-y-4 py-8">
                     <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                    <h2 className="text-xl font-semibold"></h2>
-                    <p className="text-muted-foreground"></p>
+                    <h2 className="text-xl font-semibold">Verifying Purchase Eligibility...</h2>
+                    <p className="text-muted-foreground">Checking your account against the purchase rules.</p>
                 </div>
             </>
         );
@@ -355,79 +290,7 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
                 </div>
             </>
         );
-    case 'qrPayment':
-        return (
-            <>
-                <DialogHeader className="text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                        <Image src="/img/garena.png" alt="Garena Logo" width={28} height={28} />
-                        <DialogTitle className="text-2xl font-headline">Garena Store</DialogTitle>
-                    </div>
-                </DialogHeader>
-                <div className="flex flex-col items-center justify-center space-y-4 py-4">
-                    <DialogDescription className="font-sans text-base text-center w-full">
-                      Scan to pay or use your favorite UPI app
-                    </DialogDescription>
-                    <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Amount to Pay</p>
-                        <p className="text-4xl font-bold text-primary font-sans">₹{finalPrice}</p>
-                    </div>
-                    
-                    <div className="p-1 bg-white rounded-lg border w-40 h-40 relative flex items-center justify-center">
-                        {isQrLoading || !paymentDetails ? (
-                            <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                        ) : (
-                            <div className="w-full h-full relative overflow-hidden rounded-md">
-                                <Image
-                                    src={paymentDetails.qrImageUrl}
-                                    alt="UPI QR Code"
-                                    layout="fill"
-                                    className="object-cover object-center scale-[1.6]"
-                                    style={{ objectPosition: 'center 52%' }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Waiting for payment...</span>
-                        <Countdown onExpire={handleTimerExpire}/>
-                    </div>
-
-                    <div className="w-full border-t pt-4 grid grid-cols-2 gap-3">
-                         <Button asChild variant="outline" className="h-12" disabled={!paymentDetails}>
-                            <a href={paymentDetails?.paymentLinkUrl}>
-                                <Image src="/img/gpay.png" alt="Google Pay" width={24} height={24} className="mr-2" />
-                                Google Pay
-                            </a>
-                        </Button>
-                         <Button asChild variant="outline" className="h-12" disabled={!paymentDetails}>
-                            <a href={paymentDetails?.paymentLinkUrl}>
-                                <Image src="/img/phonepay.png" alt="PhonePe" width={24} height={24} className="mr-2" />
-                                PhonePe
-                            </a>
-                        </Button>
-                        <Button asChild variant="outline" className="h-12" disabled={!paymentDetails}>
-                            <a href={paymentDetails?.paymentLinkUrl}>
-                                 <Image src="/img/paytm.png" alt="Paytm" width={24} height={24} className="mr-2" />
-                                Paytm
-                            </a>
-                        </Button>
-                         <Button asChild variant="outline" className="h-12" disabled={!paymentDetails}>
-                            <a href={paymentDetails?.paymentLinkUrl}>
-                                <Smartphone className="mr-2" />
-                                Other UPI
-                            </a>
-                        </Button>
-                    </div>
-                </div>
-                <div className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Powered by UPI India
-                </div>
-            </>
-        );
-        case 'success':
+      case 'success':
         return (
             <div className="text-center py-10 px-4 flex flex-col items-center justify-center">
                 <div className="relative w-24 h-24 mb-4">
@@ -465,4 +328,3 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
     </Dialog>
   );
 }
-
