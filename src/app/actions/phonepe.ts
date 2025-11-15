@@ -9,7 +9,7 @@ import axios from 'axios';
 import { getPhonePeAuthToken } from '@/lib/phonepe-client';
 
 const PHONEPE_HOST_URL = "https://api.phonepe.com/apis/pg";
-const PHONEPE_PAY_API = "/v1/pay";
+const PHONEPE_PAY_API = "/checkout/v2/pay"; // Corrected endpoint
 
 export async function createPhonePeOrder(
   amount: number,
@@ -33,37 +33,31 @@ export async function createPhonePeOrder(
     }
 
     const payload = {
-      merchantId: process.env.PHONEPE_MERCHANT_ID,
-      merchantTransactionId: transactionId,
-      merchantUserId: user._id.toString(),
+      merchantOrderId: transactionId,
       amount: amount * 100, // Amount in paise
-      redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/order`,
-      redirectMode: "REDIRECT",
-      callbackUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/phonepe`,
-      paymentInstrument: {
-        type: "PAY_PAGE",
-      },
+      paymentFlow: {
+        type: "PG_CHECKOUT",
+        merchantUrls: {
+            redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/order`
+        }
+      }
     };
     
-    const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
-
     const options = {
       method: 'POST',
       url: `${PHONEPE_HOST_URL}${PHONEPE_PAY_API}`,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
+        'Authorization': `O-Bearer ${authToken}`, // Corrected "O-Bearer" prefix
         accept: 'application/json'
       },
-      data: {
-        request: base64Payload
-      }
+      data: payload
     };
     
     const response = await axios.request(options);
-
-    if (response.data.success) {
-      const redirectUrl = response.data.data.instrumentResponse.redirectInfo.url;
+    
+    if (response.data.orderId) {
+      const redirectUrl = response.data.redirectUrl;
       return { success: true, redirectUrl: redirectUrl };
     } else {
        console.error("PhonePe API Error:", response.data.message);
@@ -72,6 +66,6 @@ export async function createPhonePeOrder(
 
   } catch (error: any) {
     console.error('Error creating PhonePe order:', error.response ? error.response.data : error);
-    return { success: false, error: 'Failed to create payment. ' + (error.response?.data?.message || '') };
+    return { success: false, error: 'Failed to create payment. ' + (error.response?.data?.message || 'Bad Request') };
   }
 }
