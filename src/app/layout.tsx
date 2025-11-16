@@ -136,10 +136,12 @@ export default function RootLayout({
                 const unsubscribe = onMessage(messaging, (payload) => {
                     // Show a toast for foreground notifications
                     if (payload.data) {
-                         toast({
-                            title: payload.data.title,
-                            description: payload.data.body,
-                        });
+                         setTimeout(() => {
+                            toast({
+                                title: payload.data.title,
+                                description: payload.data.body,
+                            });
+                         }, 4000);
                     }
                     // Refresh the notification bell
                     fetchInitialData(false);
