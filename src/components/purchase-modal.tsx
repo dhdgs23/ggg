@@ -131,10 +131,9 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
         setStep('success');
     }
     setTimeout(() => {
-        router.push(`/order?orderId=${currentTransactionId}`);
         handleClose();
     }, 3000);
-  }, [handleClose, router, currentTransactionId, toast]);
+  }, [handleClose, toast]);
 
   const handleBuyWithUpi = async () => {
     setIsLoading(true);
