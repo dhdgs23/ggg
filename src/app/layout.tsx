@@ -20,6 +20,7 @@ import BrowserRedirect from '@/components/browser-redirect';
 import { usePathname } from 'next/navigation';
 import BannedNotice from '@/components/banned-notice';
 import Head from 'next/head';
+import { useToast } from '@/hooks/use-toast';
 
 
 const FCM_TOKEN_KEY = 'fcm_token';
@@ -38,6 +39,7 @@ export default function RootLayout({
   const [showEventModal, setShowEventModal] = useState(false);
   const [notificationKey, setNotificationKey] = useState(0);
   const [bannedInfo, setBannedInfo] = useState<{ message: string, id: string } | null>(null);
+  const { toast } = useToast();
 
 
   const pathname = usePathname();
@@ -132,6 +134,14 @@ export default function RootLayout({
              try {
                 const messaging = getMessaging(app);
                 const unsubscribe = onMessage(messaging, (payload) => {
+                    // Show a toast for foreground notifications
+                    if (payload.data) {
+                         toast({
+                            title: payload.data.title,
+                            description: payload.data.body,
+                        });
+                    }
+                    // Refresh the notification bell
                     fetchInitialData(false);
                 });
                 return () => unsubscribe();
