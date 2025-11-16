@@ -16,6 +16,7 @@
 
 
 
+
 'use server';
 
 import { customerFAQChatbot, type CustomerFAQChatbotInput } from '@/ai/flows/customer-faq-chatbot';
@@ -846,7 +847,7 @@ export async function updateOrderStatus(orderId: string, status: 'Completed' | '
             // If order is completed, process rewards and eligibility
             if (status === 'Completed') {
                 // Reward referrer if applicable
-                if (order.referralCode) {
+                if (order.referralCode && !order.isCoinProduct) {
                     const rewardAmount = order.finalPrice * 0.50;
                     await db.collection<LegacyUser>('legacy_users').updateOne(
                         { referralCode: order.referralCode },
@@ -864,9 +865,8 @@ export async function updateOrderStatus(orderId: string, status: 'Completed' | '
                        { session }
                    );
                 }
-            } else if (status === 'Failed' && order.paymentMethod !== 'Redeem Code' && !order.isCoinProduct && (order.coinsUsed || 0) > 0) {
-                // If a UPI payment order fails, revert the coin deduction.
-                // This does not apply to redeem code orders as coins aren't deducted until completion.
+            } else if (status === 'Failed' && (order.coinsUsed || 0) > 0) {
+                // If an order fails, always revert the coin deduction.
                 await db.collection<User>('users').updateOne(
                     { gamingId: order.gamingId },
                     { $inc: { coins: order.coinsUsed } },

@@ -67,11 +67,14 @@ export async function POST(req: NextRequest) {
         }
             
         const coinsUsed = product.isCoinProduct ? 0 : Math.min(user.coins, product.coinsApplicable || 0);
-        let orderStatus: 'Completed' | 'Failed' = 'Failed';
+        let orderStatus: 'Completed' | 'Failed' | 'Processing';
 
         if (state === 'COMPLETED') {
-            orderStatus = 'Completed';
+            orderStatus = product.isCoinProduct ? 'Completed' : 'Processing';
+        } else {
+            orderStatus = 'Failed';
         }
+
 
         const newOrder: Omit<Order, '_id'> = {
             userId: user._id.toString(),
@@ -96,25 +99,28 @@ export async function POST(req: NextRequest) {
             // Insert the new order. The idempotency check above prevents duplicates.
             await db.collection<Order>('orders').insertOne(newOrder as Order, { session });
 
-            if (orderStatus === 'Completed') {
+            if (orderStatus === 'Completed' || orderStatus === 'Processing') {
                 // --- 3. Handle successful payment logic ---
                 if (product.isCoinProduct) {
                     await db.collection<User>('users').updateOne({ _id: user._id }, { $inc: { coins: product.quantity } }, { session });
                 } else if (coinsUsed > 0) {
-                    // Only deduct coins on successful completion
+                    // Only deduct coins on successful payment
                     await db.collection<User>('users').updateOne({ _id: user._id }, { $inc: { coins: -coinsUsed } }, { session });
                 }
                 
-                // Grant referral bonus on successful completion
-                if (user.referredByCode) {
+                // Grant referral bonus only when the order is fully completed. For processing orders, this will be handled by the admin action.
+                if (orderStatus === 'Completed' && user.referredByCode) {
                     const rewardAmount = finalAmount * 0.50;
-                    await db.collection<LegacyUser>('legacy_users').updateOne({ referralCode: user.referralCode }, { $inc: { walletBalance: rewardAmount } }, { session });
+                    await db.collection<LegacyUser>('legacy_users').updateOne({ referralCode: user.referredByCode }, { $inc: { walletBalance: rewardAmount } }, { session });
                 }
 
-                let notificationMessage = `Your purchase of ${product.name} for ₹${finalAmount} was successful!`;
-                 if (product.isCoinProduct) {
-                    notificationMessage = `Your purchase of ${product.name} for ₹${finalAmount} was successful! The coins have been added to your account.`
+                let notificationMessage;
+                if (orderStatus === 'Completed') { // This will only be for coin products now
+                    notificationMessage = `Your purchase of ${product.name} for ₹${finalAmount} was successful! The coins have been added to your account.`;
+                } else { // 'Processing' for normal products
+                    notificationMessage = `Your payment of ₹${finalAmount} for "${product.name}" has been successfully received. Currently, it's under processing.`;
                 }
+
 
                 const newNotification: Omit<Notification, '_id'> = {
                     gamingId,
@@ -139,10 +145,12 @@ export async function POST(req: NextRequest) {
         });
         await session.endSession();
 
-        // Send push notification only for successful orders
-        if (orderStatus === 'Completed' && user.fcmToken) {
-            let pushTitle = 'Garena Store: Purchase Successful!';
-            let pushBody = `Your purchase of ${product.name} for ₹${finalAmount} was successful!`;
+        // Send push notification for successful payment (both completed and processing)
+        if ((orderStatus === 'Completed' || orderStatus === 'Processing') && user.fcmToken) {
+            let pushTitle = orderStatus === 'Completed' ? 'Garena Store: Purchase Successful!' : 'Garena Store: Payment Received';
+            let pushBody = orderStatus === 'Completed'
+                ? `Your purchase of ${product.name} for ₹${finalAmount} was successful!`
+                : `Your payment of ₹${finalAmount} for "${product.name}" has been confirmed. Currently, it's under processing.`;
             
             await sendPushNotification({ token: user.fcmToken, title: pushTitle, body: pushBody, imageUrl: product.imageUrl });
         }
