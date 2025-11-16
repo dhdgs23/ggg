@@ -157,6 +157,9 @@ export default function PurchaseModal({ product, user: initialUser, onClose }: P
                 type: 'IFRAME',
                 callback: handlePaymentCallback
             });
+            setTimeout(() => {
+                handleClose();
+            }, 4000);
         } else {
             toast({ variant: 'destructive', title: 'Error', description: 'PhonePe Checkout script not loaded. Please refresh.' });
         }
