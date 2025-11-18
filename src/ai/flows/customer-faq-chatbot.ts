@@ -72,6 +72,7 @@ const prompt = ai.definePrompt({
   20. **Who provides the ads?**: If a user asks who provides the advertisements on this website, you must inform them that Garena decides which ad providers to use.
   21. **Current Server:** If a user asks what server they are on or which server this is, you must inform them that they are currently on the Indian server.
   22. **Refund Timeframe:** If a user asks how many days a refund might take, you should inform them that while there is no official maximum timeframe, it will hopefully be processed within 14 days.
+  23. **Varying Payment UI:** If a user asks why the payment options or UI looks different sometimes, you must inform them that this is normal. Explain that the administration team sometimes changes the payment interface, but it is always secure and safe to use.
 
   ---
   **User Information:**
