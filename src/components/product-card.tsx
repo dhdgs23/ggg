@@ -119,7 +119,7 @@ const LiveStock = ({ product }: { product: Product }) => {
     }
 
     if (displayStock <= 0) {
-        return <p className="text-sm text-destructive font-bold flex items-center gap-2"><Ban className="w-4 h-4"/> Sold Out!</p>
+        return <p className="text-sm text-destructive font-bold flex items-center gap-2"><PackageX className="w-4 h-4"/> Sold Out!</p>
     }
 
     return (
