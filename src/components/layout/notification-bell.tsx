@@ -45,7 +45,7 @@ const ClickableMessage = ({ message }: { message: string }) => {
   const parts = message.split(urlRegex);
 
   return (
-    <p className="text-sm mb-2 font-sans break-words">
+    <p className="text-sm mb-2 font-sans break-all">
       {parts.map((part, index) => {
         if (part.match(urlRegex)) {
           return (
