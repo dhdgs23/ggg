@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, type FormEvent, useEffect, useCallback } from 'react';
@@ -45,6 +46,33 @@ const FormattedDate = ({ date }: { date?: Date }) => {
       minute: 'numeric',
     });
 }
+
+const ClickableMessageContent = ({ text }: { text: string }) => {
+  const urlRegex = /(https?:\/\/[^\s]+|[\w-.]+@[\w-]+\.[\w-.]+)/g;
+  const parts = text.split(urlRegex);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part && part.match(urlRegex)) {
+          const href = part.startsWith('http') ? part : `mailto:${part}`;
+          return (
+            <a
+              key={index}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline break-all"
+            >
+              {part}
+            </a>
+          );
+        }
+        return <span key={index} className="break-words">{part}</span>;
+      })}
+    </>
+  );
+};
 
 
 export default function FaqChatbot() {
@@ -219,7 +247,7 @@ export default function FaqChatbot() {
                             <Image src={message.mediaDataUri} alt="User upload" fill className="object-cover" />
                           </div>
                         )}
-                        {message.content}
+                        <ClickableMessageContent text={message.content} />
                         </div>
                         <p className="text-xs text-muted-foreground px-1"><FormattedDate date={message.timestamp} /></p>
                     </div>
