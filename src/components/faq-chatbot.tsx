@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useRef, type FormEvent, useEffect, useCallback } from 'react';
-import { Bot, Loader2, Send, Sparkles } from 'lucide-react';
+import { Bot, Loader2, Send, Sparkles, Image as ImageIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -18,11 +17,20 @@ import { useToast } from '@/hooks/use-toast';
 import { askQuestion, getChatHistory } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
 import { type AiLog } from '@/lib/definitions';
+import Image from 'next/image';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: Date;
+  mediaDataUri?: string;
 }
 
 const FormattedDate = ({ date }: { date?: Date }) => {
@@ -44,7 +52,11 @@ export default function FaqChatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [media, setMedia] = useState<{ uri: string; type: 'image' } | null>(null);
+  const [zoomedMedia, setZoomedMedia] = useState<{ uri: string; type: 'image' } | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -60,10 +72,12 @@ export default function FaqChatbot() {
   const fetchHistory = useCallback(async () => {
     setIsHistoryLoading(true);
     const historyLogs = await getChatHistory();
-    const formattedHistory: Message[] = historyLogs.flatMap(log => [
-        { role: 'user', content: log.question, timestamp: new Date(log.createdAt) },
-        { role: 'assistant', content: log.answer, timestamp: new Date(log.createdAt) }
-    ]);
+    const formattedHistory: Message[] = historyLogs.flatMap(log => {
+        const historyMessages: Message[] = [];
+        historyMessages.push({ role: 'user', content: log.question, timestamp: new Date(log.createdAt), mediaDataUri: log.mediaDataUri });
+        historyMessages.push({ role: 'assistant', content: log.answer, timestamp: new Date(log.createdAt) });
+        return historyMessages;
+    });
     setMessages(formattedHistory);
     setIsHistoryLoading(false);
   }, []);
@@ -93,26 +107,51 @@ export default function FaqChatbot() {
     textarea.style.height = 'auto'; // Reset height
     textarea.style.height = `${textarea.scrollHeight}px`; // Set to content height
   };
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 8 * 1024 * 1024) { // 8MB limit
+        toast({
+          variant: 'destructive',
+          title: 'File too large',
+          description: 'Please select an image smaller than 8MB.',
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMedia({ uri: reader.result as string, type: 'image' });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const question = textareaRef.current?.value;
 
-    if (!question || isLoading) return;
+    if ((!question && !media) || isLoading) return;
 
     setIsLoading(true);
-    const userMessage: Message = { role: 'user', content: question, timestamp: new Date() };
+    const userMessage: Message = { 
+      role: 'user', 
+      content: question || 'Please analyze this image.', 
+      timestamp: new Date(), 
+      mediaDataUri: media?.uri,
+    };
     setMessages((prev) => [...prev, userMessage]);
 
     if (textareaRef.current) {
       textareaRef.current.value = '';
       textareaRef.current.style.height = 'auto'; // Reset height after submit
     }
+    setMedia(null);
     
-    // Prepare history for the AI
     const historyForAI = messages.map(m => ({ role: m.role, content: m.content }));
 
-    const result = await askQuestion({ question, history: historyForAI });
+    const result = await askQuestion({ question: userMessage.content, history: historyForAI, mediaDataUri: userMessage.mediaDataUri });
 
     if (result.success && result.answer) {
       const assistantMessage: Message = { role: 'assistant', content: result.answer!, timestamp: new Date() };
@@ -123,21 +162,21 @@ export default function FaqChatbot() {
         title: 'Error',
         description: result.error,
       });
-      // remove the user's message if there was an error
       setMessages((prev) => prev.slice(0, -1));
     }
     setIsLoading(false);
   };
 
   return (
+    <>
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button
           size="lg"
-          className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg bg-primary hover:bg-primary/90 transition-transform duration-300 hover:scale-110 z-20"
+          className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg bg-primary/30 backdrop-blur-sm hover:bg-primary/40 transition-transform duration-300 hover:scale-110 z-20 p-0"
           aria-label="Open FAQ Chatbot"
         >
-          <Bot className="w-8 h-8" />
+          <Image src="/img/robo.gif" alt="Chatbot" layout="fill" className="object-cover"/>
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col">
@@ -147,7 +186,7 @@ export default function FaqChatbot() {
             Garena Assistant
           </SheetTitle>
           <SheetDescription>
-          Have a question? Ask me anything about our services. For example: "How do I earn coins?"
+          Have a question? Ask me anything about our services. You can also upload an image (max 8MB).
           </SheetDescription>
         </SheetHeader>
         <div className="flex-grow mb-4 overflow-hidden">
@@ -172,6 +211,14 @@ export default function FaqChatbot() {
                             : 'bg-muted rounded-bl-none'
                         }`}
                         >
+                        {message.mediaDataUri && (
+                          <div 
+                            className="relative w-full aspect-square mb-2 rounded-lg overflow-hidden cursor-pointer"
+                            onClick={() => setZoomedMedia({ uri: message.mediaDataUri!, type: 'image' })}
+                          >
+                            <Image src={message.mediaDataUri} alt="User upload" fill className="object-cover" />
+                          </div>
+                        )}
                         {message.content}
                         </div>
                         <p className="text-xs text-muted-foreground px-1"><FormattedDate date={message.timestamp} /></p>
@@ -189,21 +236,62 @@ export default function FaqChatbot() {
             </ScrollArea>
         </div>
         <SheetFooter>
-          <form onSubmit={handleSubmit} className="flex w-full items-end space-x-2">
-            <Textarea
-              ref={textareaRef}
-              placeholder="Ask a question..."
-              disabled={isLoading || isHistoryLoading}
-              className="resize-none max-h-32 min-h-10"
-              rows={1}
-              onInput={handleTextareaInput}
-            />
-            <Button type="submit" size="icon" disabled={isLoading || isHistoryLoading}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
+          <form onSubmit={handleSubmit} className="flex flex-col w-full gap-2">
+             {media && (
+              <div className="relative w-24 h-24 rounded-md border p-1 bg-muted/50">
+                 <Image src={media.uri} alt="Preview" fill className="object-cover rounded-md" />
+                <Button 
+                  size="icon" 
+                  variant="destructive" 
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                  onClick={() => setMedia(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <div className="flex w-full items-end space-x-1.5">
+              <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+              <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isHistoryLoading}>
+                <ImageIcon className="h-5 w-5" />
+              </Button>
+              <Textarea
+                ref={textareaRef}
+                placeholder="Ask a question..."
+                disabled={isLoading || isHistoryLoading}
+                className="resize-none max-h-32 min-h-10"
+                rows={1}
+                onInput={handleTextareaInput}
+              />
+              <Button type="submit" size="icon" disabled={isLoading || isHistoryLoading}>
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
           </form>
         </SheetFooter>
       </SheetContent>
     </Sheet>
+    <Dialog open={!!zoomedMedia} onOpenChange={() => setZoomedMedia(null)}>
+        <DialogContent className="max-w-3xl w-full p-0 bg-transparent border-none shadow-none" hideCloseButton={true}>
+            <DialogHeader>
+                <DialogTitle className="sr-only">Zoomed Media</DialogTitle>
+            </DialogHeader>
+            <div className="relative flex items-center justify-center">
+                 <DialogClose asChild>
+                    <button
+                        type="button"
+                        className="absolute top-0 right-0 z-10 rounded-full p-1.5 bg-white text-black transition-opacity hover:opacity-80 focus:outline-none"
+                        aria-label="Close"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+                </DialogClose>
+                {zoomedMedia?.uri && (
+                  <Image src={zoomedMedia.uri} alt="Zoomed media" width={1200} height={800} className="max-w-full max-h-[70vh] object-contain rounded-lg" />
+                )}
+            </div>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
