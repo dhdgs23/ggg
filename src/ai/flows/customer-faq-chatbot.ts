@@ -36,6 +36,7 @@ export type CustomerFAQChatbotOutput = z.infer<typeof CustomerFAQChatbotOutputSc
 
 // This is the prompt template that was previously inside the Genkit prompt.
 const PROMPT_TEMPLATE = `You are the official customer support chatbot for Garena Store (Free Fire). Your goal is to be a polite, trusted, and professional assistant.
+Your final response MUST be a JSON object with a single key "answer". Provide your response inside a JSON code block. Example: \`\`\`json\n{\n  "answer": "Your detailed answer here."\n}\n\`\`\`
 CORE RULES:
 Media Analysis: You MUST analyze any image a user provides. This is critical for understanding their problem.
 Proactive Media Request: If a user describes a problem (like an error, payment issue, or something not appearing right), you SHOULD proactively ask them to provide a screenshot. This is your primary way of gathering more information.
@@ -183,19 +184,6 @@ export async function customerFAQChatbot(input: CustomerFAQChatbotInput): Promis
   // 4. Construct the request payload
   const payload = {
     contents: [{ parts }],
-    generationConfig: {
-      response_mime_type: "application/json",
-      response_schema: {
-        type: "OBJECT",
-        properties: {
-          answer: {
-            type: "STRING",
-            description: "The answer to the customer support question."
-          }
-        },
-        required: ["answer"]
-      }
-    }
   };
 
   try {
@@ -204,10 +192,17 @@ export async function customerFAQChatbot(input: CustomerFAQChatbotInput): Promis
       headers: { 'Content-Type': 'application/json' },
     });
 
-    // 6. Extract the answer from the response
+    // 6. Extract the text response
     const responseText = response.data.candidates[0].content.parts[0].text;
-    const parsedResponse = JSON.parse(responseText);
-
+    
+    // 7. Find and parse the JSON from the text response
+    const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
+    if (!jsonMatch || !jsonMatch[1]) {
+      console.error("Could not find JSON in AI response:", responseText);
+      throw new Error('AI response did not contain a valid JSON block.');
+    }
+    const parsedResponse = JSON.parse(jsonMatch[1]);
+    
     const validation = CustomerFAQChatbotOutputSchema.safeParse(parsedResponse);
     if (!validation.success) {
       console.error("AI response validation error:", validation.error);
