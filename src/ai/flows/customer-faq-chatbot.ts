@@ -1,16 +1,15 @@
-
 'use server';
 
 /**
- * @fileOverview This file defines a Genkit flow for a customer FAQ chatbot.
+ * @fileOverview This file defines a function for a customer FAQ chatbot.
  *
  * - `customerFAQChatbot` - A function that processes customer questions and returns answers.
  * - `CustomerFAQChatbotInput` - The input type for the `customerFAQChatbot` function.
  * - `CustomerFAQChatbotOutput` - The return type for the `customerFAQChatbot` function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { z } from 'zod';
+import axios from 'axios';
 
 const MessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
@@ -35,15 +34,8 @@ const CustomerFAQChatbotOutputSchema = z.object({
 });
 export type CustomerFAQChatbotOutput = z.infer<typeof CustomerFAQChatbotOutputSchema>;
 
-export async function customerFAQChatbot(input: CustomerFAQChatbotInput): Promise<CustomerFAQChatbotOutput> {
-  return customerFAQChatbotFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'customerFAQChatbotPrompt',
-  input: {schema: CustomerFAQChatbotInputSchema},
-  output: {schema: CustomerFAQChatbotOutputSchema},
-  prompt: `You are the official customer support chatbot for Garena Store (Free Fire). Your goal is to be a polite, trusted, and professional assistant.
+// This is the prompt template that was previously inside the Genkit prompt.
+const PROMPT_TEMPLATE = `You are the official customer support chatbot for Garena Store (Free Fire). Your goal is to be a polite, trusted, and professional assistant.
 CORE RULES:
 Media Analysis: You MUST analyze any image a user provides. This is critical for understanding their problem.
 Proactive Media Request: If a user describes a problem (like an error, payment issue, or something not appearing right), you SHOULD proactively ask them to provide a screenshot. This is your primary way of gathering more information.
@@ -84,22 +76,16 @@ Payment Debited, Order Not Received: If a user's money was debited but the item 
 Paying on Same Device: Instruct to Screenshot the QR code -> Open UPI App -> Select "Scan from Gallery".
 Other Games (PUBG/BGMI): State you only support Garena Free Fire.
 Website/Ads Info: Website made by Garena (Free Fire division). Garena selects the ad providers.
-  ---
-  **User Information:**
-  - Gaming ID: {{#if visualGamingId}}{{visualGamingId}}{{else}}{{gamingId}}{{/if}}
-  ---
+---
+**User Information:**
+- Gaming ID: {GAMING_ID}
+---
 
-  **Conversation History:**
-  {{#if history}}
-    {{#each history}}
-      **{{role}}**: {{content}}
-    {{/each}}
-  {{else}}
-    No previous conversation history.
-  {{/if}}
-  ---
+**Conversation History:**
+{HISTORY}
+---
 
-  🧠 Website Context (Garena Free Fire Shop)
+🧠 Website Context (Garena Free Fire Shop)
 
 Overview:
 Garena is the official online shop for Free Fire players, headquartered in Singapore with offices worldwide. It offers secure, discounted in-game purchases, funded by ads shown on the website.
@@ -147,24 +133,90 @@ Login History: Users can view previous Gaming IDs on the Privacy Policy page.
 📨 Support
 For help or to inquire about redeem code payments, contact:
 📧 garenaffmaxstore@gmail.com
-  ---
+---
 
-  Now, please answer the following user question based on the conversation history and provided context:
-  "{{question}}"
-  {{#if mediaDataUri}}
-  The user has also provided this image for context:
-  {{media url=mediaDataUri}}
-  {{/if}}
-`});
+Now, please answer the following user question based on the conversation history and provided context:
+"{QUESTION}"
+`;
 
-const customerFAQChatbotFlow = ai.defineFlow(
-  {
-    name: 'customerFAQChatbotFlow',
-    inputSchema: CustomerFAQChatbotInputSchema,
-    outputSchema: CustomerFAQChatbotOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+/**
+ * Calls the Google AI API directly to get an answer to a customer question.
+ * @param input The customer's question and context.
+ * @returns The answer from the AI model.
+ */
+export async function customerFAQChatbot(input: CustomerFAQChatbotInput): Promise<CustomerFAQChatbotOutput> {
+  const { question, history, gamingId, visualGamingId, mediaDataUri } = input;
+
+  // 1. Construct the history string
+  const historyString = history
+    ? history.map(h => `**${h.role}**: ${h.content}`).join('\n')
+    : 'No previous conversation history.';
+
+  // 2. Construct the full prompt by replacing placeholders
+  let fullPrompt = PROMPT_TEMPLATE
+    .replace('{GAMING_ID}', visualGamingId || gamingId || 'Not provided')
+    .replace('{HISTORY}', historyString)
+    .replace('{QUESTION}', question);
+
+  // Define the parts for the API request
+  const parts: any[] = [{ text: fullPrompt }];
+
+  // Add media if it exists
+  if (mediaDataUri) {
+    const [header, base64Data] = mediaDataUri.split(',');
+    const mimeType = header.match(/:(.*?);/)?.[1] || 'application/octet-stream';
+    parts.push({
+      inline_data: {
+        mime_type: mimeType,
+        data: base64Data,
+      },
+    });
   }
-);
+
+  // 3. Define the API endpoint and key
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY environment variable is not set.');
+  }
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${apiKey}`;
+
+  // 4. Construct the request payload
+  const payload = {
+    contents: [{ parts }],
+    generationConfig: {
+      response_mime_type: "application/json",
+      response_schema: {
+        type: "OBJECT",
+        properties: {
+          answer: {
+            type: "STRING",
+            description: "The answer to the customer support question."
+          }
+        },
+        required: ["answer"]
+      }
+    }
+  };
+
+  try {
+    // 5. Make the API call
+    const response = await axios.post(url, payload, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    // 6. Extract the answer from the response
+    const responseText = response.data.candidates[0].content.parts[0].text;
+    const parsedResponse = JSON.parse(responseText);
+
+    const validation = CustomerFAQChatbotOutputSchema.safeParse(parsedResponse);
+    if (!validation.success) {
+      console.error("AI response validation error:", validation.error);
+      throw new Error('Received an invalid response format from the AI model.');
+    }
+
+    return validation.data;
+  } catch (error: any) {
+    console.error('Error calling Google AI API:', error.response ? error.response.data : error.message);
+    throw new Error('Failed to get a response from the AI model.');
+  }
+}
