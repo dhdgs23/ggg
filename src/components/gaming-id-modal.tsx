@@ -20,6 +20,12 @@ interface GamingIdModalProps {
   onOpenChange: (isOpen: boolean) => void;
 }
 
+declare global {
+    interface Window {
+        fbq: (...args: any[]) => void;
+    }
+}
+
 
 export default function GamingIdModal({ isOpen, onOpenChange }: GamingIdModalProps) {
   const [gamingId, setGamingId] = useState('');
@@ -57,6 +63,12 @@ export default function GamingIdModal({ isOpen, onOpenChange }: GamingIdModalPro
         title: 'Success',
         description: result.message,
       });
+
+      // Fire Meta Pixel event for registration
+      if (typeof window.fbq === 'function') {
+        window.fbq('track', 'CompleteRegistration');
+      }
+
       onOpenChange(false);
       // Check if it's a new registration by looking at the welcome message
       if (result.message.includes('800 coins')) {
